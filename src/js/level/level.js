@@ -14,10 +14,15 @@ const GRASS_3 = new cells.Grass(";");
 
 const NOISE = new ROT.Noise.Simplex();
 
+export function dangerToRadius(danger) {
+	return 30; // fixme
+}
+
 export default class Level {
-	constructor(radius) {
-		this.radius = radius;
+	constructor(danger) {
+		this.danger = danger;
 		this.rooms = [];
+		this.start = this.end = null;
 		this._beings = {};
 		this._items = {};
 		this._cells = {};
@@ -25,31 +30,30 @@ export default class Level {
 
 	isInside(xy) {
 		xy = xy.scale(1, RATIO);
-		return xy.norm() < this.radius;
+		return xy.norm() < dangerToRadius(this.danger);
 	}
 
 	isOutside(xy) {
 		xy = xy.scale(1, RATIO);
-		return xy.norm() > this.radius+2;
+		return xy.norm() > dangerToRadius(this.danger)+2;
 	}
 
 	visualAt(xy) {
-		let cell;
+		let entity;
 		if (this.isOutside(xy)) {
 			let noise = NOISE.get(xy.x, xy.y);
 			if (noise < 0.3) {
-				cell = GRASS_1;
+				entity = GRASS_1;
 			} else if (noise < 0.7) {
-				cell = GRASS_2;
+				entity = GRASS_2;
 			} else {
-				cell = GRASS_3;
+				entity = GRASS_3;
 			}
 		} else {
-			let key = xy.toString();
-			cell = this._beings[key] || this._items[key] || this._cells[key] || WALL; 
+			entity = this.getEntity(xy); 
 		}
 
-		return cell.getVisual();
+		return entity.getVisual();
 	}
 
 	trim() {
@@ -70,6 +74,11 @@ export default class Level {
 		}
 
 		return true;
+	}
+
+	getEntity(xy) {
+		let key = xy.toString();
+		return this._beings[key] || this._items[key] || this._cells[key] || WALL;
 	}
 
 	setCell(xy, cell) {

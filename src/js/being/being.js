@@ -10,6 +10,14 @@ export default class Being extends Entity {
 		this._level = null;
 	}
 
+	getXY() { return this._xy; }
+	getLevel() { return this._level; }
+
+	attack(being) {
+		console.log("attack");
+		return Promise.resolve();
+	}
+
 	act() {
 		return Promise.resolve();
 	}

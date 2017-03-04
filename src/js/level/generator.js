@@ -1,37 +1,19 @@
 import XY from "util/xy.js";
 import Level from "./level.js";
 import * as room from "./room.js";
-
-(function() {
-	let seed = Date.now();
-	seed = 1486744938039;
-
-	console.log("seed", seed);
-	let state = seed;
-	function random() {
-		state = ((state * 1103515245) + 12345) & 0x7fffffff;
-		return state / 0x7fffffff;
-	}
-
-	function randomInt(min, max) {
-		return min + Math.floor((max-min+1)*random());
-	}
-
-	window.random = random;
-	window.randomInt = randomInt;
-})();
+import decorate from "./decorator.js";
 
 function connectHorizontal(level, room1, room2) {
 	let min = Math.max(room1.lt.x, room2.lt.x);
 	let max = Math.min(room1.rb.x, room2.rb.x);
-	let x = randomInt(min, max);
+	let x = ROT.RNG.getUniformInt(min, max);
 	level.carveCorridor(new XY(x, room1.center.y), new XY(x, room2.center.y));
 }
 
 function connectVertical(level, room1, room2) {
 	let min = Math.max(room1.lt.y, room2.lt.y);
 	let max = Math.min(room1.rb.y, room2.rb.y);
-	let y = randomInt(min, max);
+	let y = ROT.RNG.getUniformInt(min, max);
 	level.carveCorridor(new XY(room1.center.x, y), new XY(room2.center.x, y));
 }
 
@@ -70,7 +52,7 @@ function generateNextRoom(level) {
 		failed++;
 		let oldRoom;
 		if (level.rooms.length > 0) {
-			oldRoom = level.rooms[Math.floor(level.rooms.length * random())];
+			oldRoom = level.rooms.random();
 			center = oldRoom.center;
 		}
 
@@ -99,8 +81,8 @@ function connectWithClosest(room, level) {
 	connect(level, room, avail[0]);
 }
 
-export function generate(radius) {
-	let level = new Level(radius);
+export function generate(danger) {
+	let level = new Level(danger);
 	
 	while (true) {
 		let ok = generateNextRoom(level);
@@ -109,11 +91,11 @@ export function generate(radius) {
 
 	let r1 = room.furthestRoom(level.rooms, level.rooms[0]);
 	let r2 = room.furthestRoom(level.rooms, r1);
-
 	connectWithClosest(r1, level);
 	connectWithClosest(r2, level);
 
-	level.rooms.forEach(room => level.carveDoors(room));
+	decorate(level);
+
 	level.trim();
 
 	return level;

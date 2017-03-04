@@ -5,8 +5,8 @@ import XY from "util/xy.js";
 const DIST = 10;
 
 function roomSize() {
-	let w = 2*randomInt(2, 5)
-	let h = w + 2*randomInt(-1, 1)
+	let w = 2*ROT.RNG.getUniformInt(2, 5)
+	let h = w + 2*ROT.RNG.getUniformInt(-1, 1)
 	return new XY(w, h);
 }
 
@@ -20,8 +20,8 @@ function cloneRoom(room) {
 }
 
 export function roomNearTo(xy) {
-	let cx = xy.x + randomInt(-DIST, DIST);
-	let cy = xy.y + randomInt(-DIST, DIST);
+	let cx = xy.x + ROT.RNG.getUniformInt(-DIST, DIST);
+	let cy = xy.y + ROT.RNG.getUniformInt(-DIST, DIST);
 	let center = new XY(cx, cy);
 
 	let size = roomSize();

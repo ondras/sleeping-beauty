@@ -80,14 +80,20 @@ class XY {
 
 const RATIO = 1.6;
 
-
-
-
-
-
 const BLOCKS_NONE = 0;
 const BLOCKS_MOVEMENT = 1;
 const BLOCKS_LIGHT = 2;
+
+const DIRS = [
+	new XY(-1, -1),
+	new XY( 0, -1),
+	new XY( 1, -1),
+	new XY( 1,  0),
+	new XY( 1,  1),
+	new XY( 0,  1),
+	new XY(-1,  1),
+	new XY(-1,  0)
+];
 
 class Entity {
 	constructor(visual) {
@@ -140,9 +146,9 @@ function subscribe(message, subscriber) {
 	storage[message].push(subscriber);
 }
 
-const ROOM$$1 = new Floor();
-const CORRIDOR$$1 = new Floor();
-const DOOR$$1 = new Door();
+const ROOM = new Floor();
+const CORRIDOR = new Floor();
+const DOOR = new Door();
 const WALL = new Wall();
 const GRASS_1 = new Grass(".");
 const GRASS_2 = new Grass(",");
@@ -150,10 +156,15 @@ const GRASS_3 = new Grass(";");
 
 const NOISE = new ROT.Noise.Simplex();
 
+function dangerToRadius(danger) {
+	return 30; // fixme
+}
+
 class Level {
-	constructor(radius) {
-		this.radius = radius;
+	constructor(danger) {
+		this.danger = danger;
 		this.rooms = [];
+		this.start = this.end = null;
 		this._beings = {};
 		this._items = {};
 		this._cells = {};
@@ -161,31 +172,30 @@ class Level {
 
 	isInside(xy) {
 		xy = xy.scale(1, RATIO);
-		return xy.norm() < this.radius;
+		return xy.norm() < dangerToRadius(this.danger);
 	}
 
 	isOutside(xy) {
 		xy = xy.scale(1, RATIO);
-		return xy.norm() > this.radius+2;
+		return xy.norm() > dangerToRadius(this.danger)+2;
 	}
 
 	visualAt(xy) {
-		let cell;
+		let entity;
 		if (this.isOutside(xy)) {
 			let noise = NOISE.get(xy.x, xy.y);
 			if (noise < 0.3) {
-				cell = GRASS_1;
+				entity = GRASS_1;
 			} else if (noise < 0.7) {
-				cell = GRASS_2;
+				entity = GRASS_2;
 			} else {
-				cell = GRASS_3;
+				entity = GRASS_3;
 			}
 		} else {
-			let key = xy.toString();
-			cell = this._beings[key] || this._items[key] || this._cells[key] || WALL; 
+			entity = this.getEntity(xy); 
 		}
 
-		return cell.getVisual();
+		return entity.getVisual();
 	}
 
 	trim() {
@@ -208,6 +218,11 @@ class Level {
 		return true;
 	}
 
+	getEntity(xy) {
+		let key = xy.toString();
+		return this._beings[key] || this._items[key] || this._cells[key] || WALL;
+	}
+
 	setCell(xy, cell) {
 		this._cells[xy.toString()] = cell;
 	}
@@ -227,7 +242,7 @@ class Level {
 
 		for (xy.x=room.lt.x; xy.x<=room.rb.x; xy.x++) {
 			for (xy.y=room.lt.y; xy.y<=room.rb.y; xy.y++) {
-				this.setCell(xy, ROOM$$1);
+				this.setCell(xy, ROOM);
 			}
 		}
 	}
@@ -238,7 +253,7 @@ class Level {
 
 		for (let i=0; i<=steps; i++) {
 			let xy = xy1.lerp(xy2, i/steps).floor();
-			this.setCell(xy, CORRIDOR$$1);
+			this.setCell(xy, CORRIDOR);
 		}
 	}
 
@@ -256,7 +271,7 @@ class Level {
 				if (i > -1 && i <= size.x && j > -1 && j <= size.y) continue;
 				xy = room.lt.plus(new XY(i, j));
 				let key = xy.toString();
-				if (this._cells[key] == CORRIDOR$$1) { this.setCell(xy, DOOR$$1); }
+				if (this._cells[key] == CORRIDOR) { this.setCell(xy, DOOR); }
 			}
 		}
 	}
@@ -267,8 +282,8 @@ class Level {
 const DIST = 10;
 
 function roomSize() {
-	let w = 2*randomInt(2, 5);
-	let h = w + 2*randomInt(-1, 1);
+	let w = 2*ROT.RNG.getUniformInt(2, 5);
+	let h = w + 2*ROT.RNG.getUniformInt(-1, 1);
 	return new XY(w, h);
 }
 
@@ -282,8 +297,8 @@ function cloneRoom(room) {
 }
 
 function roomNearTo(xy) {
-	let cx = xy.x + randomInt(-DIST, DIST);
-	let cy = xy.y + randomInt(-DIST, DIST);
+	let cx = xy.x + ROT.RNG.getUniformInt(-DIST, DIST);
+	let cy = xy.y + ROT.RNG.getUniformInt(-DIST, DIST);
 	let center = new XY(cx, cy);
 
 	let size = roomSize();
@@ -328,36 +343,27 @@ function furthestRoom(rooms, start) {
 	return bestRoom;
 }
 
-(function() {
-	let seed = Date.now();
-	seed = 1486744938039;
+function decorate(level) {
+	let r1 = furthestRoom(level.rooms, level.rooms[0]);
+	let r2 = furthestRoom(level.rooms, r1);
 
-	console.log("seed", seed);
-	let state = seed;
-	function random() {
-		state = ((state * 1103515245) + 12345) & 0x7fffffff;
-		return state / 0x7fffffff;
-	}
+	level.start = r1.center;
+	level.end = r2.center;
 
-	function randomInt(min, max) {
-		return min + Math.floor((max-min+1)*random());
-	}
-
-	window.random = random;
-	window.randomInt = randomInt;
-})();
+	level.rooms.forEach(room => level.carveDoors(room));	
+}
 
 function connectHorizontal(level, room1, room2) {
 	let min = Math.max(room1.lt.x, room2.lt.x);
 	let max = Math.min(room1.rb.x, room2.rb.x);
-	let x = randomInt(min, max);
+	let x = ROT.RNG.getUniformInt(min, max);
 	level.carveCorridor(new XY(x, room1.center.y), new XY(x, room2.center.y));
 }
 
 function connectVertical(level, room1, room2) {
 	let min = Math.max(room1.lt.y, room2.lt.y);
 	let max = Math.min(room1.rb.y, room2.rb.y);
-	let y = randomInt(min, max);
+	let y = ROT.RNG.getUniformInt(min, max);
 	level.carveCorridor(new XY(room1.center.x, y), new XY(room2.center.x, y));
 }
 
@@ -396,7 +402,7 @@ function generateNextRoom(level) {
 		failed++;
 		let oldRoom;
 		if (level.rooms.length > 0) {
-			oldRoom = level.rooms[Math.floor(level.rooms.length * random())];
+			oldRoom = level.rooms.random();
 			center = oldRoom.center;
 		}
 
@@ -425,8 +431,8 @@ function connectWithClosest(room, level) {
 	connect(level, room, avail[0]);
 }
 
-function generate(radius) {
-	let level = new Level(radius);
+function generate(danger) {
+	let level = new Level(danger);
 	
 	while (true) {
 		let ok = generateNextRoom(level);
@@ -435,11 +441,11 @@ function generate(radius) {
 
 	let r1 = furthestRoom(level.rooms, level.rooms[0]);
 	let r2 = furthestRoom(level.rooms, r1);
-
 	connectWithClosest(r1, level);
 	connectWithClosest(r2, level);
 
-	level.rooms.forEach(room => level.carveDoors(room));
+	decorate(level);
+
 	level.trim();
 
 	return level;
@@ -549,6 +555,14 @@ class Being extends Entity {
 		this._level = null;
 	}
 
+	getXY() { return this._xy; }
+	getLevel() { return this._level; }
+
+	attack(being) {
+		console.log("attack");
+		return Promise.resolve();
+	}
+
 	act() {
 		return Promise.resolve();
 	}
@@ -571,16 +585,7 @@ class Being extends Entity {
 
 const CONSUMERS = [];
 
-const DIRS = [
-	new XY(-1, -1),
-	new XY( 0, -1),
-	new XY( 1, -1),
-	new XY( 1,  0),
-	new XY( 1,  1),
-	new XY( 0,  1),
-	new XY(-1,  1),
-	new XY(-1,  0)
-];
+const DIR_CODES = [null, 38, null, 39, null, 40, null, 37];
 const DIR_CHARS = [null, "k", null, "l", null, "j", null, "h"];
 
 function getDirection(e) {
@@ -589,8 +594,15 @@ function getDirection(e) {
 		let index = DIR_CHARS.indexOf(ch);
 		if (index in DIRS) { return DIRS[index]; }
 	}
-
+	if (e.type == "keydown") {
+		let index = DIR_CODES.indexOf(e.keyCode);
+		if (index in DIRS) { return DIRS[index]; }
+	}
 	return null;
+}
+
+function hasModifier(e) {
+	return (e.ctrlKey || e.shiftKey || e.altKey || e.metaKey);
 }
 
 
@@ -632,9 +644,13 @@ class PC extends Being {
 
 	handleKeyEvent(e) {
 		let dir = getDirection(e);
+		let modifier = hasModifier(e);
 		if (dir) {
-			this.moveBy(dir);
-			this._resolve();
+			if (modifier) {
+				this._interact(dir);
+			} else {
+				this._move(dir);
+			}
 		}
 	}
 
@@ -642,22 +658,118 @@ class PC extends Being {
 		super.moveTo(xy, level);
 		setCenter(xy);
 	}
+
+	_interact(dir) {
+
+	}
+
+	_move(dir) {
+		let xy = this._xy.plus(dir);
+		let entity = this._level.getEntity(xy);
+		if (entity.blocks() >= BLOCKS_MOVEMENT) {
+			// fixme log
+			return;
+		}
+		this.moveBy(dir);
+		this._resolve();
+	}
 }
 
 var pc = new PC();
 
+const AI_RANGE = 7;
+const AI_IDLE = .5;
+
+function wander(who) {
+	let result = Promise.resolve();
+
+	if (ROT.RNG.getUniform() > AI_IDLE) { return result; }
+
+	let level = who.getLevel();
+
+	let dirs = DIRS.filter(dxy => {
+		let entity = level.getEntity(who.getXY().plus(dxy));
+		return entity.blocks() < BLOCKS_MOVEMENT;
+	});
+	
+	if (!dirs.length) { return result; }
+	
+	let dir = dirs.random();
+	let xy = who.getXY().plus(dir);
+	who.moveTo(xy);
+	return result;
+}
+
+function getCloserToPC(who) {
+	let best = 1/0;
+	let avail = [];
+
+	DIRS.forEach(dxy => {
+		let xy = who.getXY().plus(dxy);
+		let entity = who.getLevel().getEntity(xy);
+		if (entity.blocks() >= BLOCKS_MOVEMENT) { return; }
+		
+		let dist = xy.dist8(pc.getXY());
+		if (dist < best) {
+			best = dist;
+			avail = [];
+		}
+		
+		if (dist == best) { avail.push(xy); }
+	});
+	
+	if (avail.length) {
+		who.moveTo(avail.random());
+	}
+
+	return Promise.resolve();
+}
+
+function attack(who) {
+	let dist = who.getXY().dist8(pc.getXY());
+	if (dist == 1) {
+		return who.attack(pc);
+	} else if (dist <= AI_RANGE) {
+		return getCloserToPC(who);
+	} else {
+		return wander(who);
+	}
+}
+
+function actEnemy(who) {
+	return attack(who);
+}
+
+class Enemy extends Being {
+	constructor(visual) {
+		super(visual);
+	}
+
+	act() {
+		return actEnemy(this);
+	}
+}
+
+class Rat extends Enemy {
+	constructor() {
+		super({ch:"r", fg:"gray"});
+	}
+}
+
 console.time("generate");
-let level = generate(30);
+let level = generate(1);
 console.timeEnd("generate");
-
-
 
 init(document.querySelector("#map"));
 setLevel(level);
 
-pc.moveTo(new XY(-20, 0), level);
+pc.moveTo(level.start, level);
+
+let rat = new Rat();
+rat.moveTo(level.start.plus(new XY(10, 0)), level);
 
 add(pc);
+add(rat);
 loop();
 
 }());

@@ -13,8 +13,9 @@ export function draw(level) {
 	document.body.appendChild(canvas);
 
 	let ctx = canvas.getContext("2d");
+	let radius = dangerToRadius(level.danger);
 
-	let offset = new XY(1.5*level.radius, 1*level.radius); // level center from canvas left-top
+	let offset = new XY(1.5*radius, 1*radius); // level center from canvas left-top
 	ctx.canvas.width = CELL.x * 2 * offset.x;
 	ctx.canvas.height = CELL.y * 2 * offset.y;
 

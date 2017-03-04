@@ -1,19 +1,9 @@
 import XY from "util/xy.js";
+import { DIRS } from "conf.js";
 
 const CONSUMERS = [];
 
-const DIRS = [
-	new XY(-1, -1),
-	new XY( 0, -1),
-	new XY( 1, -1),
-	new XY( 1,  0),
-	new XY( 1,  1),
-	new XY( 0,  1),
-	new XY(-1,  1),
-	new XY(-1,  0)
-];
-const DIR_CODES = [
-];
+const DIR_CODES = [null, 38, null, 39, null, 40, null, 37];
 const DIR_CHARS = [null, "k", null, "l", null, "j", null, "h"];
 
 export function getDirection(e) {
@@ -22,8 +12,15 @@ export function getDirection(e) {
 		let index = DIR_CHARS.indexOf(ch);
 		if (index in DIRS) { return DIRS[index]; }
 	}
-
+	if (e.type == "keydown") {
+		let index = DIR_CODES.indexOf(e.keyCode);
+		if (index in DIRS) { return DIRS[index]; }
+	}
 	return null;
+}
+
+export function hasModifier(e) {
+	return (e.ctrlKey || e.shiftKey || e.altKey || e.metaKey);
 }
 
 export function isEnter(e) {
