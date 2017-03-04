@@ -8,7 +8,7 @@ const DIR_CHARS = ["y", "k", "u", "l", "n", "j", "b", "h"];
 
 export function getDirection(e) {
 	if (e.type == "keypress") {
-		let ch = String.fromCharCode(e.charCode);
+		let ch = String.fromCharCode(e.charCode).toLowerCase();
 		let index = DIR_CHARS.indexOf(ch);
 		if (index in DIRS) { return DIRS[index]; }
 	}
