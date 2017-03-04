@@ -322,7 +322,7 @@ var pc = new PC();
 
 const GRASS_1 = new Grass(".");
 const GRASS_2 = new Grass(",");
-const GRASS_3 = new Grass(";");
+const GRASS_3 = new Grass("T");
 
 const NOISE = new ROT.Noise.Simplex();
 
@@ -343,7 +343,7 @@ class Memory {
 			let noise = NOISE.get(xy.x, xy.y);
 			if (noise < 0.3) {
 				entity = GRASS_1;
-			} else if (noise < 0.7) {
+			} else if (noise < 0.9) {
 				entity = GRASS_2;
 			} else {
 				entity = GRASS_3;

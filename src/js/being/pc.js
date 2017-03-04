@@ -1,7 +1,6 @@
 import XY from "util/xy.js";
 import Being from "./being.js";
 import * as keyboard from "util/keyboard.js";
-import * as map from "ui/map.js"; // fixme zrusit zavislost
 import * as rules from "rules.js";
 import * as pubsub from "util/pubsub.js";
 import { BLOCKS_MOVEMENT, BLOCKS_LIGHT, BLOCKS_NONE } from "conf.js";

@@ -1,9 +1,12 @@
-import * as map from "ui/map.js";
+import * as map from "ui/map/map.js";
+import * as combat from "ui/combat/combat.js";
 import * as actors from "util/actors.js";
+
 import pc from "being/pc.js";
 import { generate } from "level/generator.js";
 
 map.init(document.querySelector("#map"));
+combat.init(document.querySelector("#combat"));
 
 function switchToLevel(level, xy) {
 	actors.clear();
