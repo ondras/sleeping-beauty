@@ -127,6 +127,23 @@ class Grass extends Entity {
 class Door extends Entity {
 	constructor() {
 		super({ch:"/", fg:"saddlebrown"});
+		ROT.RNG.getUniform() > 0.5 ? this.open() : this.close();
+	}
+
+	isOpen() { return this._open; }
+
+	blocks() {
+		return (this._open ? BLOCKS_NONE : BLOCKS_LIGHT);
+	}
+
+	close() {
+		this._visual.ch = "+";
+		this._open = false;
+	}
+
+	open() {
+		this._visual.ch = "/";
+		this._open = true;
 	}
 }
 
@@ -148,7 +165,6 @@ function subscribe(message, subscriber) {
 
 const ROOM = new Floor();
 const CORRIDOR = new Floor();
-const DOOR = new Door();
 const WALL = new Wall();
 
 function dangerToRadius(danger) {
@@ -215,6 +231,7 @@ class Level {
 
 	setItem(xy, item) {
 		this._items[xy.toString()] = item;
+		publish("visual-change", this, {xy});
 	}
 
 	carveRoom(room) {
@@ -252,7 +269,7 @@ class Level {
 				if (i > -1 && i <= size.x && j > -1 && j <= size.y) continue;
 				xy = room.lt.plus(new XY(i, j));
 				let key = xy.toString();
-				if (this._cells[key] == CORRIDOR) { this.setCell(xy, DOOR); }
+				if (this._cells[key] == CORRIDOR) { this.setCell(xy, new Door()); }
 			}
 		}
 	}
@@ -362,8 +379,8 @@ class Being extends Entity {
 
 const CONSUMERS = [];
 
-const DIR_CODES = [null, 38, null, 39, null, 40, null, 37];
-const DIR_CHARS = [null, "k", null, "l", null, "j", null, "h"];
+const DIR_CODES = [ROT.VK_HOME, ROT.VK_UP, ROT.VK_PAGE_UP, ROT.VK_RIGHT, ROT.VK_PAGE_DOWN, ROT.VK_DOWN, ROT.VK_END, ROT.VK_LEFT];
+const DIR_CHARS = ["y", "k", "u", "l", "n", "j", "b", "h"];
 
 function getDirection(e) {
 	if (e.type == "keypress") {
@@ -528,15 +545,24 @@ function setLevel(l) {
 	setCenter(center);
 }
 
-function onVisualChange(message, publisher, data) {
-	if (publisher != level$1) { return; }
-	update(data.xy);
+function handleMessage(message, publisher, data) {
+	switch (message) {
+		case "visibility-change":
+			setCenter(data.xy);
+		break;
+
+		case "visual-change":
+			if (publisher != level$1) { return; }
+			update(data.xy);
+		break;
+	}
 }
 
 function init(parent) {
 	parent.appendChild(display.getContainer());
 	fit();
-	subscribe("visual-change", onVisualChange);
+	subscribe("visual-change", handleMessage);
+	subscribe("visibility-change", handleMessage);
 }
 
 const AI_RANGE = 7;
@@ -567,10 +593,11 @@ class PC extends Being {
 		let dir = getDirection(e);
 		let modifier = hasModifier(e);
 		if (dir) {
+			let xy = this._xy.plus(dir);
 			if (modifier) {
-				this._interact(dir);
+				this._interact(xy);
 			} else {
-				this._move(dir);
+				this._move(xy);
 			}
 		}
 	}
@@ -578,21 +605,21 @@ class PC extends Being {
 	moveTo(xy, level) {
 		super.moveTo(xy, level);
 		this._updateFOV();
-		setCenter(xy);
 	}
 
-	_interact(dir) {
-
+	_interact(xy) {
+		let cell = this._level.getEntity(xy);
+		cell.isOpen() ? cell.close() : cell.open();
+		this._updateFOV();
 	}
 
-	_move(dir) {
-		let xy = this._xy.plus(dir);
+	_move(xy) {
 		let entity = this._level.getEntity(xy);
 		if (entity.blocks() >= BLOCKS_MOVEMENT) {
 			// fixme log
 			return;
 		}
-		this.moveBy(dir);
+		this.moveTo(xy);
 		this._resolve();
 	}
 
@@ -609,6 +636,8 @@ class PC extends Being {
 		};
 		fov.compute(this._xy.x, this._xy.y, PC_SIGHT, cb);
 		this._fov = newFOV;
+
+		publish("visibility-change", this, {xy:this._xy});
 	}
 }
 

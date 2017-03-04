@@ -3,8 +3,8 @@ import { DIRS } from "conf.js";
 
 const CONSUMERS = [];
 
-const DIR_CODES = [null, 38, null, 39, null, 40, null, 37];
-const DIR_CHARS = [null, "k", null, "l", null, "j", null, "h"];
+const DIR_CODES = [ROT.VK_HOME, ROT.VK_UP, ROT.VK_PAGE_UP, ROT.VK_RIGHT, ROT.VK_PAGE_DOWN, ROT.VK_DOWN, ROT.VK_END, ROT.VK_LEFT];
+const DIR_CHARS = ["y", "k", "u", "l", "n", "j", "b", "h"];
 
 export function getDirection(e) {
 	if (e.type == "keypress") {

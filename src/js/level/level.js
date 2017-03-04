@@ -6,7 +6,6 @@ import * as pubsub from "util/pubsub.js";
 
 const ROOM = new cells.Floor();
 const CORRIDOR = new cells.Floor();
-const DOOR = new cells.Door();
 const WALL = new cells.Wall();
 
 export function dangerToRadius(danger) {
@@ -73,6 +72,7 @@ export default class Level {
 
 	setItem(xy, item) {
 		this._items[xy.toString()] = item;
+		pubsub.publish("visual-change", this, {xy});
 	}
 
 	carveRoom(room) {
@@ -110,7 +110,7 @@ export default class Level {
 				if (i > -1 && i <= size.x && j > -1 && j <= size.y) continue;
 				xy = room.lt.plus(new XY(i, j));
 				let key = xy.toString();
-				if (this._cells[key] == CORRIDOR) { this.setCell(xy, DOOR); }
+				if (this._cells[key] == CORRIDOR) { this.setCell(xy, new cells.Door()); }
 			}
 		}
 	}

@@ -3,6 +3,7 @@ import Being from "./being.js";
 import * as keyboard from "util/keyboard.js";
 import * as map from "ui/map.js"; // fixme zrusit zavislost
 import * as rules from "rules.js";
+import * as pubsub from "util/pubsub.js";
 import { BLOCKS_MOVEMENT, BLOCKS_LIGHT, BLOCKS_NONE } from "conf.js";
 
 class PC extends Being {
@@ -29,10 +30,11 @@ class PC extends Being {
 		let dir = keyboard.getDirection(e);
 		let modifier = keyboard.hasModifier(e);
 		if (dir) {
+			let xy = this._xy.plus(dir)
 			if (modifier) {
-				this._interact(dir);
+				this._interact(xy);
 			} else {
-				this._move(dir);
+				this._move(xy);
 			}
 		}
 	}
@@ -40,21 +42,21 @@ class PC extends Being {
 	moveTo(xy, level) {
 		super.moveTo(xy, level);
 		this._updateFOV();
-		map.setCenter(xy);
 	}
 
-	_interact(dir) {
-
+	_interact(xy) {
+		let cell = this._level.getEntity(xy);
+		cell.isOpen() ? cell.close() : cell.open();
+		this._updateFOV();
 	}
 
-	_move(dir) {
-		let xy = this._xy.plus(dir);
+	_move(xy) {
 		let entity = this._level.getEntity(xy);
 		if (entity.blocks() >= BLOCKS_MOVEMENT) {
 			// fixme log
 			return;
 		}
-		this.moveBy(dir);
+		this.moveTo(xy);
 		this._resolve();
 	}
 
@@ -71,6 +73,8 @@ class PC extends Being {
 		};
 		fov.compute(this._xy.x, this._xy.y, rules.PC_SIGHT, cb);
 		this._fov = newFOV;
+
+		pubsub.publish("visibility-change", this, {xy:this._xy});
 	}
 }
 

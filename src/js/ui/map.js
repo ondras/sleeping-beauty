@@ -96,13 +96,22 @@ function zoom() {
 	}, time);
 }
 
-function onVisualChange(message, publisher, data) {
-	if (publisher != level) { return; }
-	update(data.xy);
+function handleMessage(message, publisher, data) {
+	switch (message) {
+		case "visibility-change":
+			setCenter(data.xy);
+		break;
+
+		case "visual-change":
+			if (publisher != level) { return; }
+			update(data.xy);
+		break;
+	}
 }
 
 export function init(parent) {
 	parent.appendChild(display.getContainer());
 	fit();
-	pubsub.subscribe("visual-change", onVisualChange);
+	pubsub.subscribe("visual-change", handleMessage);
+	pubsub.subscribe("visibility-change", handleMessage);
 }
