@@ -1,0 +1,14 @@
+{
+  "name": "sleeping-beauty",
+  "version": "1.0.0",
+  "description": "Sleeping Beauty, a 2017 7DRL",
+  "scripts": {
+    "js": "rollup -c"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "rollup": "^0.41.4",
+    "rollup-plugin-includepaths": "^0.1.8"
+  }
+}
