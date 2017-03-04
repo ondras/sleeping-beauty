@@ -86,7 +86,7 @@ const RATIO = 1.6;
 
 
 const BLOCKS_NONE = 0;
-
+const BLOCKS_MOVEMENT = 1;
 const BLOCKS_LIGHT = 2;
 
 class Entity {
@@ -124,6 +124,22 @@ class Door extends Entity {
 	}
 }
 
+const storage = Object.create(null);
+
+function publish(message, publisher, data) {
+	let subscribers = storage[message] || [];
+	subscribers.forEach(subscriber => {
+		typeof(subscriber) == "function"
+			? subscriber(message, publisher, data)
+			: subscriber.handleMessage(message, publisher, data);
+	});
+}
+
+function subscribe(message, subscriber) {
+	if (!(message in storage)) { storage[message] = []; }
+	storage[message].push(subscriber);
+}
+
 const ROOM$$1 = new Floor();
 const CORRIDOR$$1 = new Floor();
 const DOOR$$1 = new Door();
@@ -132,14 +148,15 @@ const GRASS_1 = new Grass(".");
 const GRASS_2 = new Grass(",");
 const GRASS_3 = new Grass(";");
 
+const NOISE = new ROT.Noise.Simplex();
+
 class Level {
 	constructor(radius) {
 		this.radius = radius;
+		this.rooms = [];
 		this._beings = {};
 		this._items = {};
 		this._cells = {};
-		this.rooms = [];
-		this._noise = new ROT.Noise.Simplex();
 	}
 
 	isInside(xy) {
@@ -155,7 +172,7 @@ class Level {
 	visualAt(xy) {
 		let cell;
 		if (this.isOutside(xy)) {
-			let noise = this._noise.get(xy.x, xy.y);
+			let noise = NOISE.get(xy.x, xy.y);
 			if (noise < 0.3) {
 				cell = GRASS_1;
 			} else if (noise < 0.7) {
@@ -191,8 +208,17 @@ class Level {
 		return true;
 	}
 
-	carveCell(xy, cell) {
+	setCell(xy, cell) {
 		this._cells[xy.toString()] = cell;
+	}
+
+	setBeing(xy, being) {
+		this._beings[xy.toString()] = being;
+		publish("visual-change", this, {xy});
+	}
+
+	setItem(xy, item) {
+		this._items[xy.toString()] = item;
 	}
 
 	carveRoom(room) {
@@ -201,7 +227,7 @@ class Level {
 
 		for (xy.x=room.lt.x; xy.x<=room.rb.x; xy.x++) {
 			for (xy.y=room.lt.y; xy.y<=room.rb.y; xy.y++) {
-				this.carveCell(xy, ROOM$$1);
+				this.setCell(xy, ROOM$$1);
 			}
 		}
 	}
@@ -212,7 +238,7 @@ class Level {
 
 		for (let i=0; i<=steps; i++) {
 			let xy = xy1.lerp(xy2, i/steps).floor();
-			this.carveCell(xy, CORRIDOR$$1);
+			this.setCell(xy, CORRIDOR$$1);
 		}
 	}
 
@@ -230,7 +256,7 @@ class Level {
 				if (i > -1 && i <= size.x && j > -1 && j <= size.y) continue;
 				xy = room.lt.plus(new XY(i, j));
 				let key = xy.toString();
-				if (this._cells[key] == CORRIDOR$$1) { this.carveCell(xy, DOOR$$1); }
+				if (this._cells[key] == CORRIDOR$$1) { this.setCell(xy, DOOR$$1); }
 			}
 		}
 	}
@@ -427,7 +453,7 @@ let options = {
 	fontFamily: "monospace, metrickal"
 };
 let display = new ROT.Display(options);
-let center = new XY(-20, 0); // level coords in the middle of the map
+let center = new XY(0, 0); // level coords in the middle of the map
 // level XY to display XY; center = middle point
 function levelToDisplay(xy) {
 	let half = new XY(options.width, options.height).scale(0.5).floor();
@@ -488,16 +514,150 @@ function setLevel(l) {
 //	setTimeout(zoom, 2000);
 }
 
+function onVisualChange(message, publisher, data) {
+	if (publisher != level$1) { return; }
+	update(data.xy);
+}
+
 function init(parent) {
 	parent.appendChild(display.getContainer());
 	fit();
+	subscribe("visual-change", onVisualChange);
 }
+
+let queue = [];
+
+function add(actor) {
+	queue.push(actor);
+}
+
+
+
+
+
+function loop() {
+	let actor = queue.shift();
+	queue.push(actor);
+	actor.act().then(loop);
+}
+
+class Being extends Entity {
+	constructor(visual) {
+		super(visual);
+		this._blocks = BLOCKS_MOVEMENT;
+		this._xy = null;
+		this._level = null;
+	}
+
+	act() {
+		return Promise.resolve();
+	}
+
+	moveBy(dxy) {
+		return this.moveTo(this._xy.plus(dxy));
+	}
+
+	moveTo(xy, level) {
+		this._xy && this._level.setBeing(this._xy, null); // remove from old position
+
+		this._level = level || this._level;
+		this._xy = xy;
+
+		this._level.setBeing(this._xy, this); // draw at new position
+		
+		return this;
+	}
+}
+
+const CONSUMERS = [];
+
+const DIRS = [
+	new XY(-1, -1),
+	new XY( 0, -1),
+	new XY( 1, -1),
+	new XY( 1,  0),
+	new XY( 1,  1),
+	new XY( 0,  1),
+	new XY(-1,  1),
+	new XY(-1,  0)
+];
+const DIR_CHARS = [null, "k", null, "l", null, "j", null, "h"];
+
+function getDirection(e) {
+	if (e.type == "keypress") {
+		let ch = String.fromCharCode(e.charCode);
+		let index = DIR_CHARS.indexOf(ch);
+		if (index in DIRS) { return DIRS[index]; }
+	}
+
+	return null;
+}
+
+
+
+
+
+function push(consumer) {
+	CONSUMERS.push(consumer);
+}
+
+function pop() {
+	CONSUMERS.pop();
+}
+
+function handler(e) {
+	let consumer = CONSUMERS[CONSUMERS.length-1];
+	if (!consumer) { return; }
+	consumer.handleKeyEvent(e);
+}
+
+document.addEventListener("keydown", handler);
+document.addEventListener("keypress", handler);
+
+class PC extends Being {
+	constructor() {
+		super({ch:"@", fg:"#fff"});
+		this._resolve = null; // end turn
+	}
+
+	act() {
+		console.log("player act");
+		let promise = new Promise(resolve => this._resolve = resolve);
+
+		promise = promise.then(() => pop());
+		push(this);
+
+		return promise;
+	}
+
+	handleKeyEvent(e) {
+		let dir = getDirection(e);
+		if (dir) {
+			this.moveBy(dir);
+			this._resolve();
+		}
+	}
+
+	moveTo(xy, level) {
+		super.moveTo(xy, level);
+		setCenter(xy);
+	}
+}
+
+var pc = new PC();
 
 console.time("generate");
 let level = generate(30);
 console.timeEnd("generate");
 
+
+
 init(document.querySelector("#map"));
 setLevel(level);
+
+pc.moveTo(new XY(-20, 0), level);
+
+add(pc);
+loop();
 
 }());

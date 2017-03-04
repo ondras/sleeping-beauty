@@ -2,6 +2,7 @@ import XY from "util/xy.js";
 import { RATIO } from "conf.js";
 
 import * as cells from "./cells.js";
+import * as pubsub from "util/pubsub.js";
 
 const ROOM = new cells.Floor();
 const CORRIDOR = new cells.Floor();
@@ -11,14 +12,15 @@ const GRASS_1 = new cells.Grass(".");
 const GRASS_2 = new cells.Grass(",");
 const GRASS_3 = new cells.Grass(";");
 
+const NOISE = new ROT.Noise.Simplex();
+
 export default class Level {
 	constructor(radius) {
 		this.radius = radius;
+		this.rooms = [];
 		this._beings = {};
 		this._items = {};
 		this._cells = {};
-		this.rooms = [];
-		this._noise = new ROT.Noise.Simplex();
 	}
 
 	isInside(xy) {
@@ -34,7 +36,7 @@ export default class Level {
 	visualAt(xy) {
 		let cell;
 		if (this.isOutside(xy)) {
-			let noise = this._noise.get(xy.x, xy.y);
+			let noise = NOISE.get(xy.x, xy.y);
 			if (noise < 0.3) {
 				cell = GRASS_1;
 			} else if (noise < 0.7) {
@@ -70,8 +72,17 @@ export default class Level {
 		return true;
 	}
 
-	carveCell(xy, cell) {
+	setCell(xy, cell) {
 		this._cells[xy.toString()] = cell;
+	}
+
+	setBeing(xy, being) {
+		this._beings[xy.toString()] = being;
+		pubsub.publish("visual-change", this, {xy});
+	}
+
+	setItem(xy, item) {
+		this._items[xy.toString()] = item;
 	}
 
 	carveRoom(room) {
@@ -80,7 +91,7 @@ export default class Level {
 
 		for (xy.x=room.lt.x; xy.x<=room.rb.x; xy.x++) {
 			for (xy.y=room.lt.y; xy.y<=room.rb.y; xy.y++) {
-				this.carveCell(xy, ROOM);
+				this.setCell(xy, ROOM);
 			}
 		}
 	}
@@ -91,7 +102,7 @@ export default class Level {
 
 		for (let i=0; i<=steps; i++) {
 			let xy = xy1.lerp(xy2, i/steps).floor();
-			this.carveCell(xy, CORRIDOR);
+			this.setCell(xy, CORRIDOR);
 		}
 	}
 
@@ -109,7 +120,7 @@ export default class Level {
 				if (i > -1 && i <= size.x && j > -1 && j <= size.y) continue;
 				xy = room.lt.plus(new XY(i, j));
 				let key = xy.toString();
-				if (this._cells[key] == CORRIDOR) { this.carveCell(xy, DOOR); }
+				if (this._cells[key] == CORRIDOR) { this.setCell(xy, DOOR); }
 			}
 		}
 	}

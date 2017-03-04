@@ -1,5 +1,5 @@
 import XY from "util/xy.js";
-import {ROOM, CORRIDOR, DOOR, GRASS} from "conf.js";
+import * as pubsub from "util/pubsub.js";
 
 let level = null;
 let options = {
@@ -9,7 +9,7 @@ let options = {
 	fontFamily: "monospace, metrickal"
 }
 let display = new ROT.Display(options);
-let center = new XY(-20, 0); // level coords in the middle of the map
+let center = new XY(0, 0); // level coords in the middle of the map
 let memory = {};
 let memories = {};
 
@@ -106,11 +106,16 @@ function zoom() {
 		setCenter(center);
 		node.style.transition = "";
 		node.style.transform = "";
-		window.d = display;
 	}, time);
+}
+
+function onVisualChange(message, publisher, data) {
+	if (publisher != level) { return; }
+	update(data.xy);
 }
 
 export function init(parent) {
 	parent.appendChild(display.getContainer());
 	fit();
+	pubsub.subscribe("visual-change", onVisualChange);
 }
