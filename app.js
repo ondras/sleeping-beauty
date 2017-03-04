@@ -78,6 +78,22 @@ class XY {
 	}
 }
 
+const storage = Object.create(null);
+
+function publish(message, publisher, data) {
+	let subscribers = storage[message] || [];
+	subscribers.forEach(subscriber => {
+		typeof(subscriber) == "function"
+			? subscriber(message, publisher, data)
+			: subscriber.handleMessage(message, publisher, data);
+	});
+}
+
+function subscribe(message, subscriber) {
+	if (!(message in storage)) { storage[message] = []; }
+	storage[message].push(subscriber);
+}
+
 const RATIO = 1.6;
 
 const BLOCKS_NONE = 0;
@@ -107,26 +123,26 @@ class Entity {
 
 class Floor extends Entity {
 	constructor() {
-		super({ch:".", fg:"#888"});
+		super({ch:".", fg:"#aaa"});
 	}
 }
 
 class Wall extends Entity {
 	constructor() {
-		super({ch:"#", fg:"#888"});
+		super({ch:"#", fg:"#666"});
 		this._blocks = BLOCKS_LIGHT;
 	}
 }
 
 class Grass extends Entity {
 	constructor(ch) {
-		super({ch, fg:"green"});
+		super({ch, fg:"#693"});
 	}
 }
 
 class Door extends Entity {
 	constructor() {
-		super({ch:"/", fg:"saddlebrown"});
+		super({ch:"/", fg:"#963"});
 		ROT.RNG.getUniform() > 0.5 ? this.open() : this.close();
 	}
 
@@ -147,20 +163,324 @@ class Door extends Entity {
 	}
 }
 
-const storage = Object.create(null);
+class Being extends Entity {
+	constructor(visual) {
+		super(visual);
+		this._blocks = BLOCKS_MOVEMENT;
+		this._xy = null;
+		this._level = null;
+	}
 
-function publish(message, publisher, data) {
-	let subscribers = storage[message] || [];
-	subscribers.forEach(subscriber => {
-		typeof(subscriber) == "function"
-			? subscriber(message, publisher, data)
-			: subscriber.handleMessage(message, publisher, data);
-	});
+	getXY() { return this._xy; }
+	getLevel() { return this._level; }
+
+	attack(being) {
+		console.log("attack");
+		return Promise.resolve();
+	}
+
+	act() {
+		return Promise.resolve();
+	}
+
+	moveBy(dxy) {
+		return this.moveTo(this._xy.plus(dxy));
+	}
+
+	moveTo(xy, level) {
+		this._xy && this._level.setBeing(this._xy, null); // remove from old position
+
+		this._level = level || this._level;
+		this._xy = xy;
+
+		this._level.setBeing(this._xy, this); // draw at new position
+		
+		return this;
+	}
 }
 
-function subscribe(message, subscriber) {
-	if (!(message in storage)) { storage[message] = []; }
-	storage[message].push(subscriber);
+const CONSUMERS = [];
+
+const DIR_CODES = [ROT.VK_HOME, ROT.VK_UP, ROT.VK_PAGE_UP, ROT.VK_RIGHT, ROT.VK_PAGE_DOWN, ROT.VK_DOWN, ROT.VK_END, ROT.VK_LEFT];
+const DIR_CHARS = ["y", "k", "u", "l", "n", "j", "b", "h"];
+
+function getDirection(e) {
+	if (e.type == "keypress") {
+		let ch = String.fromCharCode(e.charCode);
+		let index = DIR_CHARS.indexOf(ch);
+		if (index in DIRS) { return DIRS[index]; }
+	}
+	if (e.type == "keydown") {
+		let index = DIR_CODES.indexOf(e.keyCode);
+		if (index in DIRS) { return DIRS[index]; }
+	}
+	return null;
+}
+
+function hasModifier(e) {
+	return (e.ctrlKey || e.shiftKey || e.altKey || e.metaKey);
+}
+
+
+
+
+
+function push(consumer) {
+	CONSUMERS.push(consumer);
+}
+
+function pop() {
+	CONSUMERS.pop();
+}
+
+function handler(e) {
+	let consumer = CONSUMERS[CONSUMERS.length-1];
+	if (!consumer) { return; }
+	consumer.handleKeyEvent(e);
+}
+
+document.addEventListener("keydown", handler);
+document.addEventListener("keypress", handler);
+
+const AI_RANGE = 7;
+const AI_IDLE = .5;
+const PC_SIGHT = 8;
+
+class PC extends Being {
+	constructor() {
+		super({ch:"@", fg:"#fff"});
+		this._resolve = null; // end turn
+		this._blocks = BLOCKS_NONE; // in order to see stuff via FOV...
+		this._fov = {};
+	}
+
+	getFOV() { return this._fov; }
+
+	act() {
+		console.log("player act");
+		let promise = new Promise(resolve => this._resolve = resolve);
+
+		promise = promise.then(() => pop());
+		push(this);
+
+		return promise;
+	}
+
+	handleKeyEvent(e) {
+		let dir = getDirection(e);
+		let modifier = hasModifier(e);
+		if (dir) {
+			let xy = this._xy.plus(dir);
+			if (modifier) {
+				this._interact(xy);
+			} else {
+				this._move(xy);
+			}
+		}
+	}
+
+	moveTo(xy, level) {
+		super.moveTo(xy, level);
+		this._updateFOV();
+	}
+
+	_interact(xy) {
+		let cell = this._level.getEntity(xy);
+		cell.isOpen() ? cell.close() : cell.open();
+		this._updateFOV();
+	}
+
+	_move(xy) {
+		let entity = this._level.getEntity(xy);
+		if (entity.blocks() >= BLOCKS_MOVEMENT) {
+			// fixme log
+			return;
+		}
+		this.moveTo(xy);
+		this._resolve();
+	}
+
+	_updateFOV() {
+		let level = this._level;
+		let fov = new ROT.FOV.PreciseShadowcasting((x, y) => {
+			return level.getEntity(new XY(x, y)).blocks() < BLOCKS_LIGHT;
+		});
+
+		let newFOV = {};
+		let cb = (x, y, r, amount) => {
+			let xy = new XY(x, y);
+			newFOV[xy] = xy;
+		};
+		fov.compute(this._xy.x, this._xy.y, PC_SIGHT, cb);
+		this._fov = newFOV;
+
+		publish("visibility-change", this, {xy:this._xy});
+	}
+}
+
+var pc = new PC();
+
+const GRASS_1 = new Grass(".");
+const GRASS_2 = new Grass(",");
+const GRASS_3 = new Grass(";");
+
+const NOISE = new ROT.Noise.Simplex();
+
+function darken(color) {
+	if (!color) { return color; }
+	return ROT.Color.toRGB(ROT.Color.fromString(color).map(x => x>>1));
+}
+
+class Memory {
+	constructor(level) {
+		this._level = level;
+		this._memoized = {};
+	}
+
+	visualAt(xy) {
+		if (this._level.isOutside(xy)) {
+			let entity;
+			let noise = NOISE.get(xy.x, xy.y);
+			if (noise < 0.3) {
+				entity = GRASS_1;
+			} else if (noise < 0.7) {
+				entity = GRASS_2;
+			} else {
+				entity = GRASS_3;
+			}
+			return entity.getVisual();
+		}
+
+		let fov = pc.getFOV();
+		if (xy in fov) {
+			let visual = this._level.getEntity(xy).getVisual();
+			this._memoize(xy, visual);
+			return visual;
+		} else if (xy in this._memoized) {
+			return this._memoized[xy];
+		} else {
+			return null;
+		}
+	}
+
+	_memoize(xy, visual) {
+		this._memoized[xy] = {
+			ch: visual.ch,
+			fg: darken(visual.fg)
+		};
+	}
+}
+
+let level$1 = null;
+let options = {
+	width: 1,
+	height: 1,
+	fontSize: 18,
+	fontFamily: "monospace, metrickal"
+};
+let display = new ROT.Display(options);
+let center = new XY(0, 0); // level coords in the middle of the map
+let memory = null;
+let memories = {};
+
+// level XY to display XY; center = middle point
+function levelToDisplay(xy) {
+	let half = new XY(options.width, options.height).scale(0.5).floor();
+
+	return xy.minus(center).plus(half);
+}
+
+// display XY to level XY; middle point = center
+function displayToLevel(xy) {
+	let half = new XY(options.width, options.height).scale(0.5).floor();
+
+	return xy.minus(half).plus(center);
+}
+
+function fit() {
+	let node = display.getContainer();
+	let parent = node.parentNode;
+	let avail = new XY(parent.offsetWidth, parent.offsetHeight);
+
+	let size = display.computeSize(avail.x, avail.y);
+	size[0] += (size[0] % 2 ? 2 : 1);
+	size[1] += (size[1] % 2 ? 2 : 1);
+	options.width = size[0];
+	options.height = size[1];
+	display.setOptions(options);
+
+	let current = new XY(node.offsetWidth, node.offsetHeight);
+	let offset = avail.minus(current).scale(0.5);
+	node.style.left = `${offset.x}px`;
+	node.style.top = `${offset.y}px`;
+}
+
+function update(levelXY) {
+	let visual = memory.visualAt(levelXY);
+	if (!visual) { return; }
+	let displayXY = levelToDisplay(levelXY);
+	display.draw(displayXY.x, displayXY.y, visual.ch, visual.fg);
+}
+
+function setCenter(newCenter) {
+	center = newCenter.clone();
+	display.clear();
+
+	let displayXY = new XY();
+	for (displayXY.x=0; displayXY.x<options.width; displayXY.x++) {
+		for (displayXY.y=0; displayXY.y<options.height; displayXY.y++) {
+			update(displayToLevel(displayXY));
+		}
+	}
+}
+
+function setLevel(l) {
+	level$1 = l;
+
+	if (!(level$1.id in memories)) {
+		memories[level$1.id] = new Memory(level$1);
+	}
+	memory = memories[level$1.id];
+
+	setCenter(center);
+}
+
+function handleMessage(message, publisher, data) {
+	switch (message) {
+		case "visibility-change":
+			setCenter(data.xy);
+		break;
+
+		case "visual-change":
+			if (publisher != level$1) { return; }
+			update(data.xy);
+		break;
+	}
+}
+
+function init(parent) {
+	parent.appendChild(display.getContainer());
+	fit();
+	subscribe("visual-change", handleMessage);
+	subscribe("visibility-change", handleMessage);
+}
+
+let queue = [];
+
+function add(actor) {
+	queue.push(actor);
+}
+
+function clear() {
+	queue = [];
+}
+
+
+
+function loop() {
+	let actor = queue.shift();
+	queue.push(actor);
+	actor.act().then(loop);
 }
 
 const ROOM = new Floor();
@@ -340,308 +660,6 @@ function furthestRoom(rooms, start) {
 	visit(start, null, 0);
 	return bestRoom;
 }
-
-class Being extends Entity {
-	constructor(visual) {
-		super(visual);
-		this._blocks = BLOCKS_MOVEMENT;
-		this._xy = null;
-		this._level = null;
-	}
-
-	getXY() { return this._xy; }
-	getLevel() { return this._level; }
-
-	attack(being) {
-		console.log("attack");
-		return Promise.resolve();
-	}
-
-	act() {
-		return Promise.resolve();
-	}
-
-	moveBy(dxy) {
-		return this.moveTo(this._xy.plus(dxy));
-	}
-
-	moveTo(xy, level) {
-		this._xy && this._level.setBeing(this._xy, null); // remove from old position
-
-		this._level = level || this._level;
-		this._xy = xy;
-
-		this._level.setBeing(this._xy, this); // draw at new position
-		
-		return this;
-	}
-}
-
-const CONSUMERS = [];
-
-const DIR_CODES = [ROT.VK_HOME, ROT.VK_UP, ROT.VK_PAGE_UP, ROT.VK_RIGHT, ROT.VK_PAGE_DOWN, ROT.VK_DOWN, ROT.VK_END, ROT.VK_LEFT];
-const DIR_CHARS = ["y", "k", "u", "l", "n", "j", "b", "h"];
-
-function getDirection(e) {
-	if (e.type == "keypress") {
-		let ch = String.fromCharCode(e.charCode);
-		let index = DIR_CHARS.indexOf(ch);
-		if (index in DIRS) { return DIRS[index]; }
-	}
-	if (e.type == "keydown") {
-		let index = DIR_CODES.indexOf(e.keyCode);
-		if (index in DIRS) { return DIRS[index]; }
-	}
-	return null;
-}
-
-function hasModifier(e) {
-	return (e.ctrlKey || e.shiftKey || e.altKey || e.metaKey);
-}
-
-
-
-
-
-function push(consumer) {
-	CONSUMERS.push(consumer);
-}
-
-function pop() {
-	CONSUMERS.pop();
-}
-
-function handler(e) {
-	let consumer = CONSUMERS[CONSUMERS.length-1];
-	if (!consumer) { return; }
-	consumer.handleKeyEvent(e);
-}
-
-document.addEventListener("keydown", handler);
-document.addEventListener("keypress", handler);
-
-const GRASS_1 = new Grass(".");
-const GRASS_2 = new Grass(",");
-const GRASS_3 = new Grass(";");
-
-const NOISE = new ROT.Noise.Simplex();
-
-function darken(color) {
-	if (!color) { return color; }
-	return ROT.Color.toRGB(ROT.Color.fromString(color).map(x => x>>1));
-}
-
-class Memory {
-	constructor(level) {
-		this._level = level;
-		this._memoized = {};
-	}
-
-	visualAt(xy) {
-		if (this._level.isOutside(xy)) {
-			let entity;
-			let noise = NOISE.get(xy.x, xy.y);
-			if (noise < 0.3) {
-				entity = GRASS_1;
-			} else if (noise < 0.7) {
-				entity = GRASS_2;
-			} else {
-				entity = GRASS_3;
-			}
-			return entity.getVisual();
-		}
-
-		let fov = pc.getFOV();
-		if (xy in fov) {
-			let visual = this._level.getEntity(xy).getVisual();
-			this._memoize(xy, visual);
-			return visual;
-		} else if (xy in this._memoized) {
-			return this._memoized[xy];
-		} else {
-			return null;
-		}
-	}
-
-	_memoize(xy, visual) {
-		this._memoized[xy] = {
-			ch: visual.ch,
-			fg: darken(visual.fg)
-		};
-	}
-}
-
-let level$1 = null;
-let options = {
-	width: 1,
-	height: 1,
-	fontSize: 18,
-	fontFamily: "monospace, metrickal"
-};
-let display = new ROT.Display(options);
-let center = new XY(0, 0); // level coords in the middle of the map
-let memory = null;
-let memories = {};
-
-// level XY to display XY; center = middle point
-function levelToDisplay(xy) {
-	let half = new XY(options.width, options.height).scale(0.5).floor();
-
-	return xy.minus(center).plus(half);
-}
-
-// display XY to level XY; middle point = center
-function displayToLevel(xy) {
-	let half = new XY(options.width, options.height).scale(0.5).floor();
-
-	return xy.minus(half).plus(center);
-}
-
-function fit() {
-	let node = display.getContainer();
-	let parent = node.parentNode;
-	let avail = new XY(parent.offsetWidth, parent.offsetHeight);
-
-	let size = display.computeSize(avail.x, avail.y);
-	size[0] += (size[0] % 2 ? 2 : 1);
-	size[1] += (size[1] % 2 ? 2 : 1);
-	options.width = size[0];
-	options.height = size[1];
-	display.setOptions(options);
-
-	let current = new XY(node.offsetWidth, node.offsetHeight);
-	let offset = avail.minus(current).scale(0.5);
-	node.style.left = `${offset.x}px`;
-	node.style.top = `${offset.y}px`;
-}
-
-function update(levelXY) {
-	let visual = memory.visualAt(levelXY);
-	if (!visual) { return; }
-	let displayXY = levelToDisplay(levelXY);
-	display.draw(displayXY.x, displayXY.y, visual.ch, visual.fg);
-}
-
-function setCenter(newCenter) {
-	center = newCenter.clone();
-	display.clear();
-
-	let displayXY = new XY();
-	for (displayXY.x=0; displayXY.x<options.width; displayXY.x++) {
-		for (displayXY.y=0; displayXY.y<options.height; displayXY.y++) {
-			update(displayToLevel(displayXY));
-		}
-	}
-}
-
-function setLevel(l) {
-	level$1 = l;
-
-	if (!(level$1.id in memories)) {
-		memories[level$1.id] = new Memory(level$1);
-	}
-	memory = memories[level$1.id];
-
-	setCenter(center);
-}
-
-function handleMessage(message, publisher, data) {
-	switch (message) {
-		case "visibility-change":
-			setCenter(data.xy);
-		break;
-
-		case "visual-change":
-			if (publisher != level$1) { return; }
-			update(data.xy);
-		break;
-	}
-}
-
-function init(parent) {
-	parent.appendChild(display.getContainer());
-	fit();
-	subscribe("visual-change", handleMessage);
-	subscribe("visibility-change", handleMessage);
-}
-
-const AI_RANGE = 7;
-const AI_IDLE = .5;
-const PC_SIGHT = 8;
-
-class PC extends Being {
-	constructor() {
-		super({ch:"@", fg:"#fff"});
-		this._resolve = null; // end turn
-		this._blocks = BLOCKS_NONE; // in order to see stuff via FOV...
-		this._fov = {};
-	}
-
-	getFOV() { return this._fov; }
-
-	act() {
-		console.log("player act");
-		let promise = new Promise(resolve => this._resolve = resolve);
-
-		promise = promise.then(() => pop());
-		push(this);
-
-		return promise;
-	}
-
-	handleKeyEvent(e) {
-		let dir = getDirection(e);
-		let modifier = hasModifier(e);
-		if (dir) {
-			let xy = this._xy.plus(dir);
-			if (modifier) {
-				this._interact(xy);
-			} else {
-				this._move(xy);
-			}
-		}
-	}
-
-	moveTo(xy, level) {
-		super.moveTo(xy, level);
-		this._updateFOV();
-	}
-
-	_interact(xy) {
-		let cell = this._level.getEntity(xy);
-		cell.isOpen() ? cell.close() : cell.open();
-		this._updateFOV();
-	}
-
-	_move(xy) {
-		let entity = this._level.getEntity(xy);
-		if (entity.blocks() >= BLOCKS_MOVEMENT) {
-			// fixme log
-			return;
-		}
-		this.moveTo(xy);
-		this._resolve();
-	}
-
-	_updateFOV() {
-		let level = this._level;
-		let fov = new ROT.FOV.PreciseShadowcasting((x, y) => {
-			return level.getEntity(new XY(x, y)).blocks() < BLOCKS_LIGHT;
-		});
-
-		let newFOV = {};
-		let cb = (x, y, r, amount) => {
-			let xy = new XY(x, y);
-			newFOV[xy] = xy;
-		};
-		fov.compute(this._xy.x, this._xy.y, PC_SIGHT, cb);
-		this._fov = newFOV;
-
-		publish("visibility-change", this, {xy:this._xy});
-	}
-}
-
-var pc = new PC();
 
 function wander(who) {
 	let result = Promise.resolve();
@@ -831,34 +849,23 @@ function generate(danger) {
 	return level;
 }
 
-let queue = [];
+init(document.querySelector("#map"));
 
-function add(actor) {
-	queue.push(actor);
-}
+function switchToLevel(level, xy) {
+	clear();
 
+	setLevel(level);
+	pc.moveTo(xy, level);
 
-
-
-
-function loop() {
-	let actor = queue.shift();
-	queue.push(actor);
-	actor.act().then(loop);
+	let beings = level.getBeings();
+	beings.forEach(being => add(being));
 }
 
 console.time("generate");
 let level = generate(1);
 console.timeEnd("generate");
 
-init(document.querySelector("#map"));
-setLevel(level);
-
-pc.moveTo(level.start, level);
-
-let beings = level.getBeings();
-beings.forEach(being => add(being));
-
+switchToLevel(level, level.start);
 loop();
 
 }());

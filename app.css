@@ -1,0 +1,33 @@
+@font-face {
+  font-family: Metrickal;
+  src: url(Metrickal-Regular.otf);
+}
+body {
+  margin: 0;
+  font-family: Metrickal, monospace;
+}
+#column {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 40vw;
+}
+#map {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 60vw;
+  height: 60vh;
+  overflow: hidden;
+}
+#combat {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 60vw;
+  height: 40vh;
+}
+canvas {
+  position: relative;
+}

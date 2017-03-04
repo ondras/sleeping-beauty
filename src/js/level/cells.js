@@ -3,26 +3,26 @@ import { BLOCKS_NONE, BLOCKS_LIGHT } from "conf.js";
 
 export class Floor extends Entity {
 	constructor() {
-		super({ch:".", fg:"#888"});
+		super({ch:".", fg:"#aaa"});
 	}
 }
 
 export class Wall extends Entity {
 	constructor() {
-		super({ch:"#", fg:"#888"});
+		super({ch:"#", fg:"#666"});
 		this._blocks = BLOCKS_LIGHT;
 	}
 }
 
 export class Grass extends Entity {
 	constructor(ch) {
-		super({ch, fg:"green"});
+		super({ch, fg:"#693"});
 	}
 }
 
 export class Door extends Entity {
 	constructor() {
-		super({ch:"/", fg:"saddlebrown"});
+		super({ch:"/", fg:"#963"});
 		ROT.RNG.getUniform() > 0.5 ? this.open() : this.close();
 	}
 

@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "description": "Sleeping Beauty, a 2017 7DRL",
   "scripts": {
-    "js": "rollup -c"
+    "js": "rollup -c",
+    "css": "lessc src/css/app.less > app.css"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "less": "^2.7.2",
     "rollup": "^0.41.4",
     "rollup-plugin-includepaths": "^0.1.8"
   }
