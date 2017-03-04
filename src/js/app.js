@@ -3,7 +3,6 @@ import * as map from "ui/map.js";
 import * as actors from "util/actors.js";
 import XY from "util/xy.js";
 import pc from "being/pc.js";
-import { Rat } from "being/enemy.js";
 
 console.time("generate");
 let level = generate(1);
@@ -14,9 +13,7 @@ map.setLevel(level);
 
 pc.moveTo(level.start, level);
 
-let rat = new Rat();
-rat.moveTo(level.start.plus(new XY(10, 0)), level);
+let beings = level.getBeings();
+beings.forEach(being => actors.add(being));
 
-actors.add(pc);
-actors.add(rat);
 actors.loop();

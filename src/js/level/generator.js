@@ -56,7 +56,7 @@ function generateNextRoom(level) {
 			center = oldRoom.center;
 		}
 
-		let newRoom = room.roomNearTo(center); // fixme adaptive distance (seed:1486744938039, enlarge:3) 
+		let newRoom = room.roomNearTo(center);
 		if (!level.isInside(newRoom.center)) { continue; }
 		if (!level.fits(room.enlarge(newRoom, 2))) { continue; }
 		level.carveRoom(newRoom);

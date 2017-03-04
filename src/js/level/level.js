@@ -8,11 +8,6 @@ const ROOM = new cells.Floor();
 const CORRIDOR = new cells.Floor();
 const DOOR = new cells.Door();
 const WALL = new cells.Wall();
-const GRASS_1 = new cells.Grass(".");
-const GRASS_2 = new cells.Grass(",");
-const GRASS_3 = new cells.Grass(";");
-
-const NOISE = new ROT.Noise.Simplex();
 
 export function dangerToRadius(danger) {
 	return 30; // fixme
@@ -20,7 +15,7 @@ export function dangerToRadius(danger) {
 
 export default class Level {
 	constructor(danger) {
-		this.danger = danger;
+		this.danger = this.id = danger;
 		this.rooms = [];
 		this.start = this.end = null;
 		this._beings = {};
@@ -36,24 +31,6 @@ export default class Level {
 	isOutside(xy) {
 		xy = xy.scale(1, RATIO);
 		return xy.norm() > dangerToRadius(this.danger)+2;
-	}
-
-	visualAt(xy) {
-		let entity;
-		if (this.isOutside(xy)) {
-			let noise = NOISE.get(xy.x, xy.y);
-			if (noise < 0.3) {
-				entity = GRASS_1;
-			} else if (noise < 0.7) {
-				entity = GRASS_2;
-			} else {
-				entity = GRASS_3;
-			}
-		} else {
-			entity = this.getEntity(xy); 
-		}
-
-		return entity.getVisual();
 	}
 
 	trim() {
@@ -88,6 +65,10 @@ export default class Level {
 	setBeing(xy, being) {
 		this._beings[xy.toString()] = being;
 		pubsub.publish("visual-change", this, {xy});
+	}
+
+	getBeings() {
+		return Object.keys(this._beings).map(key => this._beings[key]);
 	}
 
 	setItem(xy, item) {

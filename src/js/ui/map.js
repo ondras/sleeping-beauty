@@ -1,5 +1,6 @@
 import XY from "util/xy.js";
 import * as pubsub from "util/pubsub.js";
+import Memory from "./memory.js";
 
 let level = null;
 let options = {
@@ -10,7 +11,7 @@ let options = {
 }
 let display = new ROT.Display(options);
 let center = new XY(0, 0); // level coords in the middle of the map
-let memory = {};
+let memory = null;
 let memories = {};
 
 // level XY to display XY; center = middle point
@@ -45,25 +46,9 @@ function fit() {
 	node.style.top = `${offset.y}px`;
 }
 
-function darken(color) {
-	if (!color) { return color; }
-	return ROT.Color.toRGB(ROT.Color.fromString(color).map(x => x>>1));
-}
-
-function memoize(xy) {
-	let key = xy.toString();
-	let visual = level.cells[key].visual;
-	memory[key] = {
-		ch: visual.ch,
-		fg: darken(visual.fg),
-		bg: darken(visual.bg)
-	}
-	update(xy);
-}
-
 function update(levelXY) {
-	let visual = level.visualAt(levelXY);
-//	if (!visual) { return; } // fixme really?
+	let visual = memory.visualAt(levelXY);
+	if (!visual) { return; }
 	let displayXY = levelToDisplay(levelXY);
 	display.draw(displayXY.x, displayXY.y, visual.ch, visual.fg);
 }
@@ -81,12 +66,14 @@ export function setCenter(newCenter) {
 }
 
 export function setLevel(l) {
-//	if (level) { memories[level.id] = memory; }
 	level = l;
-//	memory = memories[level.id] || {};
-	setCenter(center);
 
-//	setTimeout(zoom, 2000);
+	if (!(level.id in memories)) {
+		memories[level.id] = new Memory(level);
+	}
+	memory = memories[level.id];
+
+	setCenter(center);
 }
 
 function zoom() {
