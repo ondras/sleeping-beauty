@@ -7,26 +7,33 @@ body {
   font-family: Metrickal, monospace;
   background-color: #000;
 }
-#column {
+body > * {
   position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 40vw;
 }
 #map {
-  position: absolute;
   left: 0;
   top: 0;
   width: 60vw;
   height: 60vh;
   overflow: hidden;
 }
-#combat {
-  position: absolute;
+#log {
   left: 0;
   bottom: 0;
   width: 60vw;
+  height: 40vh;
+}
+#combat {
+  right: 0;
+  top: 0;
+  width: 40vw;
+  height: 60vh;
+}
+#inventory {
+  background-color: pink;
+  right: 0;
+  bottom: 0;
+  width: 40vw;
   height: 40vh;
 }
 canvas {
