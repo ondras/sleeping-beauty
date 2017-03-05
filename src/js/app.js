@@ -1,5 +1,5 @@
 import * as map from "ui/map/map.js";
-import * as combat from "ui/combat/combat.js";
+import * as combat from "combat/combat.js";
 import * as actors from "util/actors.js";
 
 import pc from "being/pc.js";

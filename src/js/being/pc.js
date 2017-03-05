@@ -4,6 +4,14 @@ import * as keyboard from "util/keyboard.js";
 import * as rules from "rules.js";
 import * as pubsub from "util/pubsub.js";
 import { BLOCKS_MOVEMENT, BLOCKS_LIGHT, BLOCKS_NONE } from "conf.js";
+import { ATTACK_1, ATTACK_2, MAGIC_1, MAGIC_2 } from "conf.js";
+
+let COMBAT_OPTIONS = {
+	[ATTACK_1]: 10,
+	[ATTACK_2]: 10,
+	[MAGIC_1]: 10,
+	[MAGIC_2]: 10
+};
 
 class PC extends Being {
 	constructor() {
@@ -14,6 +22,10 @@ class PC extends Being {
 	}
 
 	getFOV() { return this._fov; }
+
+	getCombatOption() {
+		return ROT.RNG.getWeightedValue(COMBAT_OPTIONS);
+	}
 
 	act() {
 		console.log("player act");

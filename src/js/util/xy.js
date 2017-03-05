@@ -73,4 +73,12 @@ export default class XY {
 	ceil() {
 		return new XY(Math.ceil(this.x), Math.ceil(this.y));
 	}
+
+	mod(xy) {
+		let x = this.x % xy.x;
+		if (x < 0) { x += xy.x; }
+		let y = this.y % xy.y;
+		if (y < 0) { y += xy.y; }
+		return new XY(x, y);
+	}
 }

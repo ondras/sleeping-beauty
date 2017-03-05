@@ -8,4 +8,5 @@ export default class Entity {
 
 	getVisual() { return this._visual; }
 	blocks() { return this._blocks; }
+	toString() { return this._visual.ch; }
 }

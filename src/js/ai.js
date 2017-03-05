@@ -2,6 +2,7 @@ import XY from "util/xy.js";
 import pc from "being/pc.js";
 import { DIRS, BLOCKS_MOVEMENT } from "conf.js";
 import * as rules from "rules.js";
+import * as combat from "combat/combat.js";
 
 function wander(who) {
 	let result = Promise.resolve();
@@ -51,7 +52,8 @@ function getCloserToPC(who) {
 function attack(who) {
 	let dist = who.getXY().dist8(pc.getXY());
 	if (dist == 1) {
-		return who.attack(pc);
+		// fixme log
+		return combat.start(who);
 	} else if (dist <= rules.AI_RANGE) {
 		return getCloserToPC(who);
 	} else {

@@ -1,9 +1,10 @@
 const SPEED = 10; // cells per second
 
-class Animation {
+export default class Animation {
 	constructor() {
 		this._items = [];
 		this._ts = null;
+		this._resolve = null;
 	}
 
 	add(item) {
@@ -12,9 +13,11 @@ class Animation {
 	}
 
 	start(drawCallback) {
+		let promise = new Promise(resolve => this._resolve = resolve)
 		this._drawCallback = drawCallback;
 		this._ts = Date.now();
 		this._step();
+		return promise;
 	}
 
 	_step() {
@@ -31,7 +34,11 @@ class Animation {
 		}
 
 		this._drawCallback();
-		if (this._items.length > 0) { requestAnimationFrame(() => this._step()); }
+		if (this._items.length > 0) { 
+			requestAnimationFrame(() => this._step());
+		} else {
+			this._resolve();
+		}
 	}
 
 	_stepItem(item, time) {

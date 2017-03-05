@@ -8,14 +8,23 @@ export default class Being extends Entity {
 		this._blocks = BLOCKS_MOVEMENT;
 		this._xy = null;
 		this._level = null;
+		this._hp = 10;
 	}
 
 	getXY() { return this._xy; }
 	getLevel() { return this._level; }
+	isAlive() { return (this._hp > 0); }
 
-	attack(being) {
-		console.log("attack");
-		return Promise.resolve();
+	damage(amount) {
+		if (this._hp == 0) { return; }
+		this._hp = Math.max(0, this._hp-amount);
+		if (this._hp == 0) { this.die(); }
+	}
+	
+	die() {
+		this._level.setBeing(this._xy, null);
+		// fixme drop stuff?
+		// fixme actors.remove(this);
 	}
 
 	act() {

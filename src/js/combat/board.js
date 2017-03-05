@@ -1,29 +1,32 @@
+import XY from "util/xy.js";
+import Animation from "./animation.js";
+import pc from "being/pc.js";
+
 const W = 6;
 const H = W;
-const AVAIL = ["red", "green", "blue", "yellow"];
 
-class Board {
-	static random() {
-		let board = new this();
-
-		board._data.forEach(col => {
-			col.forEach((cell, i) => {
-				col[i] = {color:AVAIL.random()};
-			});
-		});
-
-		return board;
-	}
-
+export default class Board {
 	constructor() {
 		this._data = [];
-		this.cursor = new XY(0, 0);
 
 		for (let i=0;i<W;i++) {
 			let col = [];
 			this._data.push(col);
 			for (let j=0;j<H;j++) { col.push(null); }
 		}
+	}
+
+	randomize() {
+		this._data.forEach(col => {
+			col.forEach((cell, i) => {
+				col[i] = {value:pc.getCombatOption()};
+			});
+		});
+		return this;
+	}
+
+	getSize() {
+		return new XY(W, H);
 	}
 
 	at(xy) {
@@ -74,7 +77,7 @@ class Board {
 
 		/* new cells */
 		for (let i=0;i<totalFall;i++) {
-			let cell = {color:AVAIL.random()};
+			let cell = {value:pc.getCombatOption()};
 			let sourceY = col.length+i;
 			let targetY = sourceY - totalFall;
 			col[targetY] = cell;
@@ -89,10 +92,10 @@ class Board {
 
 	findSegment(xy) {
 		function is(sxy) { return sxy.is(xy); }
-		return this._computeSegments().filter(segment => segment.some(is))[0];
+		return this.getAllSegments().filter(segment => segment.some(is))[0];
 	}
 
-	_computeSegments() {
+	getAllSegments() {
 		let clone = this._clone();
 		let segments = [];
 		let xy = new XY();
@@ -111,12 +114,12 @@ class Board {
 	/* mutates! */
 	extractSegment(xy) {
 		let segment = [];
-		let color = this.at(xy).color;
+		let value = this.at(xy).value;
 
 		let tryIt = (xy) => {
 			if (xy.x<0 || xy.y<0 || xy.x>=W || xy.y>=H) { return; }
 			let cell = this.at(xy);
-			if (!cell || cell.color != color) { return; }
+			if (!cell || cell.value != value) { return; }
 
 			this.set(xy, null);
 			segment.push(xy.clone());

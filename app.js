@@ -76,6 +76,14 @@ class XY {
 	ceil() {
 		return new XY(Math.ceil(this.x), Math.ceil(this.y));
 	}
+
+	mod(xy) {
+		let x = this.x % xy.x;
+		if (x < 0) { x += xy.x; }
+		let y = this.y % xy.y;
+		if (y < 0) { y += xy.y; }
+		return new XY(x, y);
+	}
 }
 
 const storage = Object.create(null);
@@ -111,6 +119,11 @@ const DIRS = [
 	new XY(-1,  0)
 ];
 
+const ATTACK_1 = "a1";
+const ATTACK_2 = "a2";
+const MAGIC_1 = "m1";
+const MAGIC_2 = "m2";
+
 class Entity {
 	constructor(visual) {
 		this._visual = visual;
@@ -119,6 +132,7 @@ class Entity {
 
 	getVisual() { return this._visual; }
 	blocks() { return this._blocks; }
+	toString() { return this._visual.ch; }
 }
 
 class Floor extends Entity {
@@ -169,14 +183,23 @@ class Being extends Entity {
 		this._blocks = BLOCKS_MOVEMENT;
 		this._xy = null;
 		this._level = null;
+		this._hp = 10;
 	}
 
 	getXY() { return this._xy; }
 	getLevel() { return this._level; }
+	isAlive() { return (this._hp > 0); }
 
-	attack(being) {
-		console.log("attack");
-		return Promise.resolve();
+	damage(amount) {
+		if (this._hp == 0) { return; }
+		this._hp = Math.max(0, this._hp-amount);
+		if (this._hp == 0) { this.die(); }
+	}
+	
+	die() {
+		this._level.setBeing(this._xy, null);
+		// fixme drop stuff?
+		// fixme actors.remove(this);
 	}
 
 	act() {
@@ -206,7 +229,7 @@ const DIR_CHARS = ["y", "k", "u", "l", "n", "j", "b", "h"];
 
 function getDirection(e) {
 	if (e.type == "keypress") {
-		let ch = String.fromCharCode(e.charCode);
+		let ch = String.fromCharCode(e.charCode).toLowerCase();
 		let index = DIR_CHARS.indexOf(ch);
 		if (index in DIRS) { return DIRS[index]; }
 	}
@@ -221,7 +244,10 @@ function hasModifier(e) {
 	return (e.ctrlKey || e.shiftKey || e.altKey || e.metaKey);
 }
 
-
+function isEnter(e) {
+	if (e.type != "keydown") { return null; }
+	return (e.keyCode == 13);
+}
 
 
 
@@ -246,6 +272,13 @@ const AI_RANGE = 7;
 const AI_IDLE = .5;
 const PC_SIGHT = 8;
 
+let COMBAT_OPTIONS = {
+	[ATTACK_1]: 10,
+	[ATTACK_2]: 10,
+	[MAGIC_1]: 10,
+	[MAGIC_2]: 10
+};
+
 class PC extends Being {
 	constructor() {
 		super({ch:"@", fg:"#fff"});
@@ -255,6 +288,10 @@ class PC extends Being {
 	}
 
 	getFOV() { return this._fov; }
+
+	getCombatOption() {
+		return ROT.RNG.getWeightedValue(COMBAT_OPTIONS);
+	}
 
 	act() {
 		console.log("player act");
@@ -322,7 +359,7 @@ var pc = new PC();
 
 const GRASS_1 = new Grass(".");
 const GRASS_2 = new Grass(",");
-const GRASS_3 = new Grass("T");
+const GRASS_3 = new Grass(";");
 
 const NOISE = new ROT.Noise.Simplex();
 
@@ -343,7 +380,7 @@ class Memory {
 			let noise = NOISE.get(xy.x, xy.y);
 			if (noise < 0.3) {
 				entity = GRASS_1;
-			} else if (noise < 0.9) {
+			} else if (noise < 0.7) {
 				entity = GRASS_2;
 			} else {
 				entity = GRASS_3;
@@ -463,6 +500,346 @@ function init(parent) {
 	fit();
 	subscribe("visual-change", handleMessage);
 	subscribe("visibility-change", handleMessage);
+}
+
+const SPEED = 10; // cells per second
+
+class Animation {
+	constructor() {
+		this._items = [];
+		this._ts = null;
+		this._resolve = null;
+	}
+
+	add(item) {
+		this._items.push(item);
+		item.cell.animated = item.from;
+	}
+
+	start(drawCallback) {
+		let promise = new Promise(resolve => this._resolve = resolve);
+		this._drawCallback = drawCallback;
+		this._ts = Date.now();
+		this._step();
+		return promise;
+	}
+
+	_step() {
+		let time = Date.now() - this._ts;
+
+		let i = this._items.length;
+		while (i --> 0) { /* down so we can splice */
+			let item = this._items[i];
+			let finished = this._stepItem(item, time);
+			if (finished) { 
+				this._items.splice(i, 1);
+				item.cell.animated = null;
+			}
+		}
+
+		this._drawCallback();
+		if (this._items.length > 0) { 
+			requestAnimationFrame(() => this._step());
+		} else {
+			this._resolve();
+		}
+	}
+
+	_stepItem(item, time) {
+		let dist = item.from.dist8(item.to);
+
+		let frac = (time/1000) * SPEED / dist;
+		let finished = false;
+		if (frac >= 1) {
+			finished = true;
+			frac = 1;
+		}
+
+		item.cell.animated = item.from.lerp(item.to, frac);
+
+		return finished;
+	}
+}
+
+const W = 6;
+const H = W;
+
+class Board {
+	constructor() {
+		this._data = [];
+
+		for (let i=0;i<W;i++) {
+			let col = [];
+			this._data.push(col);
+			for (let j=0;j<H;j++) { col.push(null); }
+		}
+	}
+
+	randomize() {
+		this._data.forEach(col => {
+			col.forEach((cell, i) => {
+				col[i] = {value:pc.getCombatOption()};
+			});
+		});
+		return this;
+	}
+
+	getSize() {
+		return new XY(W, H);
+	}
+
+	at(xy) {
+		return this._data[xy.x][xy.y];
+	}
+
+	set(xy, value) {
+		this._data[xy.x][xy.y] = value;
+	}
+
+	_clone() {
+		let clone = new this.constructor();
+		clone._data = JSON.parse(JSON.stringify(this._data));
+		return clone;
+	}
+
+	fall() {
+		let animation = new Animation();
+
+		this._data.forEach((col, index) => {
+			this._fallColumn(index, animation);
+		});
+
+		return animation;
+	}
+
+	_fallColumn(x, animation) {
+		let totalFall = 0;
+		let col = this._data[x];
+
+		col.forEach((cell, y) => {
+			if (cell) {
+				if (totalFall == 0) { return; }
+				let targetY = y-totalFall;
+
+				col[targetY] = cell;
+				col[y] = null;
+
+				animation.add({
+					cell,
+					from: new XY(x, y),
+					to: new XY(x, targetY),
+				});
+			} else {
+				totalFall++;
+			}
+		});
+
+		/* new cells */
+		for (let i=0;i<totalFall;i++) {
+			let cell = {value:pc.getCombatOption()};
+			let sourceY = col.length+i;
+			let targetY = sourceY - totalFall;
+			col[targetY] = cell;
+
+			animation.add({
+				cell,
+				from: new XY(x, sourceY),
+				to: new XY(x, targetY),
+			});
+		}
+	}
+
+	findSegment(xy) {
+		function is(sxy) { return sxy.is(xy); }
+		return this.getAllSegments().filter(segment => segment.some(is))[0];
+	}
+
+	getAllSegments() {
+		let clone = this._clone();
+		let segments = [];
+		let xy = new XY();
+		for (xy.x=0; xy.x<W; xy.x++) {
+			for (xy.y=0; xy.y<H; xy.y++) {
+				let cell = clone.at(xy);
+				if (!cell) { continue; }
+				let segment = clone.extractSegment(xy);
+				segments.push(segment);
+			}
+		}
+
+		return segments.sort((a, b) => b.length-a.length);
+	}
+
+	/* mutates! */
+	extractSegment(xy) {
+		let segment = [];
+		let value = this.at(xy).value;
+
+		let tryIt = (xy) => {
+			if (xy.x<0 || xy.y<0 || xy.x>=W || xy.y>=H) { return; }
+			let cell = this.at(xy);
+			if (!cell || cell.value != value) { return; }
+
+			this.set(xy, null);
+			segment.push(xy.clone());
+			tryIt(xy.plus(new XY( 1,  0)));
+			tryIt(xy.plus(new XY(-1,  0)));
+			tryIt(xy.plus(new XY( 0, -1)));
+			tryIt(xy.plus(new XY( 0,  1)));
+		};
+
+		tryIt(xy);
+		return segment;
+	}
+}
+
+const CELL = 30;
+const CTX = document.createElement("canvas").getContext("2d");
+
+const COLORS = {
+	[ATTACK_1]: "red",
+	[ATTACK_2]: "lime",
+	[MAGIC_1]: "blue",
+	[MAGIC_2]: "yellow"
+};
+
+function drawCell(xy, color, highlight) {
+	let x = (xy.x+0.5)*CELL;
+	let y = CTX.canvas.height-(xy.y+0.5)*CELL;
+
+	let alpha = 0.75;
+	let bold = false;
+	if (highlight.some(hxy => hxy.is(xy))) { 
+		alpha = 1; 
+		bold = true;
+	}
+
+	CTX.font = `${bold ? "bold " : ""}${CELL*0.8}px monospace`;
+	CTX.globalAlpha = alpha;
+
+	CTX.fillStyle = color;
+	CTX.fillText("#", x, y);
+}
+
+function drawCursor(xy) {
+	CTX.strokeStyle = "#999";
+	CTX.lineWidth = 2;
+
+	let X = xy.x * CELL;
+	let Y = CTX.canvas.height-(xy.y+1)*CELL;
+	CTX.strokeRect(X+2, Y+2, CELL-4, CELL-4);
+}
+
+function draw(board, cursor, highlight = []) {
+	let size = board.getSize();
+	CTX.canvas.width = size.x*CELL;
+	CTX.canvas.height = size.y*CELL;
+	CTX.font = `bold ${CELL*0.8}px monospace`;
+	CTX.textAlign = "center";
+	CTX.textBaseline = "middle";
+
+	let xy = new XY();
+	for (xy.x=0; xy.x<size.x; xy.x++) {
+		for (xy.y=0; xy.y<size.y; xy.y++) {
+			let cell = board.at(xy);
+			if (!cell) { return; }
+			let pos = cell.animated || xy;
+			let color = COLORS[cell.value];
+			drawCell(pos, color, highlight);
+		}
+	}
+
+	drawCursor(cursor);
+}
+
+function init$2(parent) {
+	parent.appendChild(CTX.canvas);
+}
+
+let board = new Board().randomize();
+let resolve = null;
+let enemy = null;
+let cursor = new XY(0, 0);
+
+function doDamage(attacker, defender, options = {}) {
+	console.log("%s attacks %s (%o)", attacker, defender, options);
+	defender.damage(5);
+	if (!defender.isAlive()) {
+		pop();
+		resolve();
+	}
+}
+
+function activate(xy) {
+	let segment = board.findSegment(xy);
+	if (!segment || segment.length < 2) { return; }
+
+	let value = board.at(xy).value;
+
+	segment.forEach(xy => {
+		board.set(xy, null);
+	});
+
+	let animation = board.fall();
+	animation.start(drawFast).then(() => {
+		checkSegments();
+		drawFull();
+	});
+
+	let power = segment.length * (segment.length+1) / 2;
+	let isMagic = (value == MAGIC_1 || value == MAGIC_2);
+	let attacker = pc;
+	let defender = enemy;
+	if (value == ATTACK_2 || value == MAGIC_2) {
+		attacker = enemy;
+		defender = pc;
+	}
+
+	doDamage(attacker, defender, {isMagic});
+}
+
+function checkSegments() {
+	while (1) {
+		let segments = board.getAllSegments();
+		if (segments[0].length >= 2) { return; }
+		board.randomize();
+	} 
+}
+
+function handleKeyEvent(e) {
+	if (isEnter(e)) { return activate(cursor); }
+
+	let dir = getDirection(e);
+	if (!dir) { return; }
+
+	dir = dir.scale(1, -1);
+	cursor = cursor.plus(dir).mod(board.getSize());
+	drawFull();
+}
+
+function drawFast() {
+	draw(board, cursor);
+}
+
+function drawFull() {
+	let highlight = board.findSegment(cursor);
+	if (highlight && highlight.length < 2) { highlight = null; }
+	draw(board, cursor, highlight || []);
+}
+
+function init$1(parent) {
+	init$2(parent);
+	checkSegments();
+	drawFull();
+}
+
+function start(e) {
+	enemy = e;
+	let promise = new Promise(r => resolve = r);
+	// fixme visuals
+	push({handleKeyEvent});
+
+	return promise;
 }
 
 let queue = [];
@@ -709,7 +1086,8 @@ function getCloserToPC(who) {
 function attack(who) {
 	let dist = who.getXY().dist8(pc.getXY());
 	if (dist == 1) {
-		return who.attack(pc);
+		// fixme log
+		return start(who);
 	} else if (dist <= AI_RANGE) {
 		return getCloserToPC(who);
 	} else {
@@ -747,7 +1125,7 @@ function decorate(level) {
 	level.rooms.forEach(room => level.carveDoors(room));	
 
 	let rat = new Rat();
-	rat.moveTo(level.start.plus(new XY(10, 0)), level);
+	rat.moveTo(level.start.plus(new XY(3, 0)), level);
 
 }
 
@@ -850,6 +1228,7 @@ function generate(danger) {
 }
 
 init(document.querySelector("#map"));
+init$1(document.querySelector("#combat"));
 
 function switchToLevel(level, xy) {
 	clear();
