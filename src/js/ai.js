@@ -1,6 +1,7 @@
 import XY from "util/xy.js";
 import pc from "being/pc.js";
-import { DIRS, BLOCKS_MOVEMENT } from "conf.js";
+import { DIRS } from "conf.js";
+import { BLOCKS_MOVEMENT } from "entity.js";
 import * as rules from "rules.js";
 import * as combat from "combat/combat.js";
 

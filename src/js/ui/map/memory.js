@@ -1,9 +1,9 @@
 import * as cells from "level/cells.js";
 import pc from "being/pc.js";
 
-const GRASS_1 = new cells.Grass(".");
-const GRASS_2 = new cells.Grass(",");
-const GRASS_3 = new cells.Grass(";");
+const GRASS_1 = new cells.Grass("\"");
+const GRASS_2 = new cells.Grass("'");
+const TREE = new cells.Tree();
 
 const NOISE = new ROT.Noise.Simplex();
 
@@ -21,13 +21,13 @@ export default class Memory {
 	visualAt(xy) {
 		if (this._level.isOutside(xy)) {
 			let entity;
-			let noise = NOISE.get(xy.x, xy.y);
-			if (noise < 0.3) {
+			let noise = NOISE.get(xy.x/20, xy.y/20);
+			if (noise < 0) {
 				entity = GRASS_1;
-			} else if (noise < 0.7) {
+			} else if (noise < 0.8) {
 				entity = GRASS_2;
 			} else {
-				entity = GRASS_3;
+				entity = TREE;
 			}
 			return entity.getVisual();
 		}

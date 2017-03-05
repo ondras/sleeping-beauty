@@ -7,7 +7,7 @@ let options = {
 	width: 1,
 	height: 1,
 	fontSize: 18,
-	fontFamily: "monospace, metrickal"
+	fontFamily: "metrickal, monospace"
 }
 let display = new ROT.Display(options);
 let center = new XY(0, 0); // level coords in the middle of the map

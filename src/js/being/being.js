@@ -1,6 +1,6 @@
 import XY from "util/xy.js";
-import Entity from "entity.js";
-import { BLOCKS_MOVEMENT } from "conf.js";
+import Entity, { BLOCKS_MOVEMENT } from "entity.js";
+import * as actors from "util/actors.js";
 
 export default class Being extends Entity {
 	constructor(visual) {
@@ -23,8 +23,8 @@ export default class Being extends Entity {
 	
 	die() {
 		this._level.setBeing(this._xy, null);
+		actors.remove(this);
 		// fixme drop stuff?
-		// fixme actors.remove(this);
 	}
 
 	act() {

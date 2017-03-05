@@ -1,5 +1,4 @@
-import Entity from "entity.js";
-import { BLOCKS_NONE, BLOCKS_LIGHT } from "conf.js";
+import Entity, { BLOCKS_NONE, BLOCKS_LIGHT } from "entity.js";
 
 export class Floor extends Entity {
 	constructor() {
@@ -17,6 +16,12 @@ export class Wall extends Entity {
 export class Grass extends Entity {
 	constructor(ch) {
 		super({ch, fg:"#693"});
+	}
+}
+
+export class Tree extends Entity {
+	constructor() {
+		super({ch:"T", fg:"green"});
 	}
 }
 

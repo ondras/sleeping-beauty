@@ -22,7 +22,7 @@ function drawCell(xy, color, highlight) {
 		bold = true;
 	}
 
-	CTX.font = `${bold ? "bold " : ""}${CELL*0.8}px monospace`;
+	CTX.font = `${bold ? "bold " : ""}${CELL*0.8}px metrickal, monospace`;
 	CTX.globalAlpha = alpha;
 
 	CTX.fillStyle = color;
@@ -42,7 +42,6 @@ export function draw(board, cursor, highlight = []) {
 	let size = board.getSize();
 	CTX.canvas.width = size.x*CELL;
 	CTX.canvas.height = size.y*CELL;
-	CTX.font = `bold ${CELL*0.8}px monospace`;
 	CTX.textAlign = "center";
 	CTX.textBaseline = "middle";
 

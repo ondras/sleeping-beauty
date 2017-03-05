@@ -102,27 +102,9 @@ function subscribe(message, subscriber) {
 	storage[message].push(subscriber);
 }
 
-const RATIO = 1.6;
-
 const BLOCKS_NONE = 0;
 const BLOCKS_MOVEMENT = 1;
 const BLOCKS_LIGHT = 2;
-
-const DIRS = [
-	new XY(-1, -1),
-	new XY( 0, -1),
-	new XY( 1, -1),
-	new XY( 1,  0),
-	new XY( 1,  1),
-	new XY( 0,  1),
-	new XY(-1,  1),
-	new XY(-1,  0)
-];
-
-const ATTACK_1 = "a1";
-const ATTACK_2 = "a2";
-const MAGIC_1 = "m1";
-const MAGIC_2 = "m2";
 
 class Entity {
 	constructor(visual) {
@@ -154,6 +136,12 @@ class Grass extends Entity {
 	}
 }
 
+class Tree extends Entity {
+	constructor() {
+		super({ch:"T", fg:"green"});
+	}
+}
+
 class Door extends Entity {
 	constructor() {
 		super({ch:"/", fg:"#963"});
@@ -177,6 +165,27 @@ class Door extends Entity {
 	}
 }
 
+let queue = [];
+
+function add(actor) {
+	queue.push(actor);
+}
+
+function clear() {
+	queue = [];
+}
+
+function remove(actor) {
+	let index = queue.indexOf(actor);
+	if (index > -1) { queue.splice(index, 1); }
+}
+
+function loop() {
+	let actor = queue.shift();
+	queue.push(actor);
+	actor.act().then(loop);
+}
+
 class Being extends Entity {
 	constructor(visual) {
 		super(visual);
@@ -198,8 +207,8 @@ class Being extends Entity {
 	
 	die() {
 		this._level.setBeing(this._xy, null);
+		remove(this);
 		// fixme drop stuff?
-		// fixme actors.remove(this);
 	}
 
 	act() {
@@ -221,6 +230,24 @@ class Being extends Entity {
 		return this;
 	}
 }
+
+const RATIO = 1.6;
+
+const DIRS = [
+	new XY(-1, -1),
+	new XY( 0, -1),
+	new XY( 1, -1),
+	new XY( 1,  0),
+	new XY( 1,  1),
+	new XY( 0,  1),
+	new XY(-1,  1),
+	new XY(-1,  0)
+];
+
+const ATTACK_1 = "a1";
+const ATTACK_2 = "a2";
+const MAGIC_1 = "m1";
+const MAGIC_2 = "m2";
 
 const CONSUMERS = [];
 
@@ -357,9 +384,9 @@ class PC extends Being {
 
 var pc = new PC();
 
-const GRASS_1 = new Grass(".");
-const GRASS_2 = new Grass(",");
-const GRASS_3 = new Grass(";");
+const GRASS_1 = new Grass("\"");
+const GRASS_2 = new Grass("'");
+const TREE = new Tree();
 
 const NOISE = new ROT.Noise.Simplex();
 
@@ -377,13 +404,13 @@ class Memory {
 	visualAt(xy) {
 		if (this._level.isOutside(xy)) {
 			let entity;
-			let noise = NOISE.get(xy.x, xy.y);
-			if (noise < 0.3) {
+			let noise = NOISE.get(xy.x/20, xy.y/20);
+			if (noise < 0) {
 				entity = GRASS_1;
-			} else if (noise < 0.7) {
+			} else if (noise < 0.8) {
 				entity = GRASS_2;
 			} else {
-				entity = GRASS_3;
+				entity = TREE;
 			}
 			return entity.getVisual();
 		}
@@ -413,7 +440,7 @@ let options = {
 	width: 1,
 	height: 1,
 	fontSize: 18,
-	fontFamily: "monospace, metrickal"
+	fontFamily: "metrickal, monospace"
 };
 let display = new ROT.Display(options);
 let center = new XY(0, 0); // level coords in the middle of the map
@@ -714,7 +741,7 @@ function drawCell(xy, color, highlight) {
 		bold = true;
 	}
 
-	CTX.font = `${bold ? "bold " : ""}${CELL*0.8}px monospace`;
+	CTX.font = `${bold ? "bold " : ""}${CELL*0.8}px metrickal, monospace`;
 	CTX.globalAlpha = alpha;
 
 	CTX.fillStyle = color;
@@ -734,7 +761,6 @@ function draw(board, cursor, highlight = []) {
 	let size = board.getSize();
 	CTX.canvas.width = size.x*CELL;
 	CTX.canvas.height = size.y*CELL;
-	CTX.font = `bold ${CELL*0.8}px monospace`;
 	CTX.textAlign = "center";
 	CTX.textBaseline = "middle";
 
@@ -840,24 +866,6 @@ function start(e) {
 	push({handleKeyEvent});
 
 	return promise;
-}
-
-let queue = [];
-
-function add(actor) {
-	queue.push(actor);
-}
-
-function clear() {
-	queue = [];
-}
-
-
-
-function loop() {
-	let actor = queue.shift();
-	queue.push(actor);
-	actor.act().then(loop);
 }
 
 const ROOM = new Floor();
@@ -1227,6 +1235,10 @@ function generate(danger) {
 	return level;
 }
 
+let seed = Date.now();
+console.log("seed", seed);
+ROT.RNG.setSeed(seed);
+
 init(document.querySelector("#map"));
 init$1(document.querySelector("#combat"));
 
@@ -1244,7 +1256,12 @@ console.time("generate");
 let level = generate(1);
 console.timeEnd("generate");
 
-switchToLevel(level, level.start);
-loop();
+push({
+	handleKeyEvent() {
+		pop();
+		switchToLevel(level, level.start);
+		loop();
+	}
+});
 
 }());
