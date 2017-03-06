@@ -3,6 +3,7 @@ import { DIRS } from "conf.js";
 
 const CONSUMERS = [];
 
+const DIR_NUMPAD = [ROT.VK_NUMPAD7, ROT.VK_NUMPAD8, ROT.VK_NUMPAD9, ROT.VK_NUMPAD6, ROT.VK_NUMPAD3, ROT.VK_NUMPAD2, ROT.VK_NUMPAD1, ROT.VK_NUMPAD4];
 const DIR_CODES = [ROT.VK_HOME, ROT.VK_UP, ROT.VK_PAGE_UP, ROT.VK_RIGHT, ROT.VK_PAGE_DOWN, ROT.VK_DOWN, ROT.VK_END, ROT.VK_LEFT];
 const DIR_CHARS = ["y", "k", "u", "l", "n", "j", "b", "h"];
 
@@ -14,6 +15,9 @@ export function getDirection(e) {
 	}
 	if (e.type == "keydown") {
 		let index = DIR_CODES.indexOf(e.keyCode);
+		if (index in DIRS) { return DIRS[index]; }
+
+		index = DIR_NUMPAD.indexOf(e.keyCode);
 		if (index in DIRS) { return DIRS[index]; }
 	}
 	return null;

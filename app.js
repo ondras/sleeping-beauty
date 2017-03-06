@@ -251,6 +251,7 @@ const MAGIC_2 = "m2";
 
 const CONSUMERS = [];
 
+const DIR_NUMPAD = [ROT.VK_NUMPAD7, ROT.VK_NUMPAD8, ROT.VK_NUMPAD9, ROT.VK_NUMPAD6, ROT.VK_NUMPAD3, ROT.VK_NUMPAD2, ROT.VK_NUMPAD1, ROT.VK_NUMPAD4];
 const DIR_CODES = [ROT.VK_HOME, ROT.VK_UP, ROT.VK_PAGE_UP, ROT.VK_RIGHT, ROT.VK_PAGE_DOWN, ROT.VK_DOWN, ROT.VK_END, ROT.VK_LEFT];
 const DIR_CHARS = ["y", "k", "u", "l", "n", "j", "b", "h"];
 
@@ -262,6 +263,9 @@ function getDirection(e) {
 	}
 	if (e.type == "keydown") {
 		let index = DIR_CODES.indexOf(e.keyCode);
+		if (index in DIRS) { return DIRS[index]; }
+
+		index = DIR_NUMPAD.indexOf(e.keyCode);
 		if (index in DIRS) { return DIRS[index]; }
 	}
 	return null;
@@ -1574,10 +1578,9 @@ console.time("generate");
 let level = generate(1);
 console.timeEnd("generate");
 
-init(document.querySelector("#map"));
-init$1(document.querySelector("#combat"));
-
 start$1(document.querySelector("#intro")).then(() => {
+	init(document.querySelector("#map"));
+	init$1(document.querySelector("#combat"));
 	activate();
 	switchToLevel(level, level.start);
 	loop();

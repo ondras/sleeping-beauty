@@ -24,10 +24,9 @@ console.time("generate");
 let level = generate(1);
 console.timeEnd("generate");
 
-map.init(document.querySelector("#map"));
-combat.init(document.querySelector("#combat"));
-
 intro.start(document.querySelector("#intro")).then(() => {
+	map.init(document.querySelector("#map"));
+	combat.init(document.querySelector("#combat"));
 	map.activate();
 	switchToLevel(level, level.start);
 	actors.loop();

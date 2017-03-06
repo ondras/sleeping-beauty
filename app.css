@@ -9,7 +9,7 @@ body {
 }
 body > * {
   position: absolute;
-  transition: opacity 1000ms;
+  transition: opacity 1500ms;
 }
 .hidden {
   opacity: 0;

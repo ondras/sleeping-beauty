@@ -35,7 +35,7 @@ export default class Memory {
 		let fov = pc.getFOV();
 		if (xy in fov) {
 			let visual = this._level.getEntity(xy).getVisual();
-			this._memoize(xy, visual);
+			this._memoize(xy, visual); // FIXME memoize cell only?
 			return visual;
 		} else if (xy in this._memoized) {
 			return this._memoized[xy];
