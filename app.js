@@ -868,6 +868,264 @@ function start(e) {
 	return promise;
 }
 
+const START = [
+	" _     _     _     _ ",
+	"[_]___[_]___[_]___[_]",
+	"[__#__][__#I_]__I__#]",
+	"[_I_#_I__*[__]__#_*_]",
+	"   [_]_#_]__I_#__]   ",
+	"   [I_|/     \\|*_]   ",
+	'   [#_||  ?  ||_#]   ',
+	"   [_I||     ||_#]   ",
+	"   [__]|     ||#_]   "];
+
+const END = [
+	" \\\\[__]#_I__][__#]// "
+];
+
+const WIDTH = 13;
+
+const TEST = new Array(11).join("\n");
+
+let node = document.createElement("div");
+node.classList.add("tower");
+
+function mid() {
+	let content = "";
+	let separatorDistance = 0;
+	let vineDistance = 0;
+
+	for (let i=0; i<WIDTH; i++) {
+		let ch = "";
+		let separatorChance = (separatorDistance-0.5) / 3;
+		let vineChance = (vineDistance+1) / 15;
+
+		if (ROT.RNG.getUniform() < separatorChance) {
+			ch = ["I", "]", "["].random();
+			separatorDistance = 0;
+		} else {
+			separatorDistance++;
+			ch = "_";
+		}
+
+		if (ROT.RNG.getUniform() < vineChance) {
+			ch = ["#", "#", "*"].random();
+			vineDistance = 0;
+		} else {
+			vineDistance++;
+		}
+
+		content += ch;
+	}
+
+	return `   [${content}]   `;
+}
+
+function colorize(ch, index, str) {
+	let color = ["#888", "#aaa", "#999"].random();
+	let transparent = false;
+
+	switch (ch) {
+		case "?":
+			color = "red";
+			transparent = true;
+		break;
+		case "/":
+		case "\\":
+			if (str.charAt(index-1) == ch || str.charAt(index+1) == ch) { 
+				color = "lime";
+				transparent = true;
+			}
+		break;
+		case "#":
+			color = ["#383", "#262"].random();
+		break;
+		case "*":
+			color = "pink";
+		break;
+	}
+
+	if (ch == "_" && str.charAt(index-1) == " ") { transparent = true; }
+	return `<span style="color:${color}" ${transparent ? "class='transparent'" : ""}>${ch}</span>`;
+}
+
+function fit$1() {
+	let avail = node.parentNode.offsetHeight;
+	node.innerHTML = TEST;
+	let rows = Math.floor(TEST.length*avail/node.offsetHeight) - 4;
+
+	rows -= START.length;
+	rows -= END.length;
+
+	let all = START.slice();
+	for (let i=0;i<rows;i++) {
+		all.push(mid());
+	}
+	all = all.concat(END);
+
+	node.innerHTML = all.join("\n").replace(/\S/g, colorize);
+}
+
+function getNode() {
+	return node;
+}
+
+let node$1 = document.createElement("div");
+node$1.classList.add("title");
+node$1.innerHTML =                                               
+".oPYo. 8                       o             \n" +
+"8      8                                     \n" +
+"`Yooo. 8 .oPYo. .oPYo. .oPYo. o8 odYo. .oPYo.\n" +
+"    `8 8 8oooo8 8oooo8 8    8  8 8' `8 8    8\n" + 
+"     8 8 8.     8.     8    8  8 8   8 8    8\n" +
+"`YooP' 8 `Yooo' `Yooo' 8YooP'  8 8   8 `YooP8\n" + 
+"                       8                    8\n" +
+"                       8                 ooP'\n" +
+" .oPYo.                        o             \n" +
+" 8   `8                        8             \n" +
+"o8YooP' .oPYo. .oPYo. o    o  o8P o    o     \n" +
+" 8   `b 8oooo8 .oooo8 8    8   8  8    8     \n" +
+" 8    8 8.     8    8 8    8   8  8    8     \n" +
+" 8oooP' `Yooo' `YooP8 `YooP'   8  `YooP8     \n" +
+"                                       8     \n" +
+"                                    ooP'     ";
+
+function getNode$1() {
+	return node$1;
+}
+
+let node$2 = document.createElement("div");
+node$2.classList.add("bottom");
+node$2.innerHTML = "BOTTOM";
+
+const TEST$1 = "xxxxxxxxxx";
+const PAD = "  ";
+
+const KNIGHT = [
+	"   .-.   ",
+	" __|=|__ ",
+	"(_/'-'\\_)",
+	"//\\___/\\\\",
+	"<>/   \\<>",
+	" \\|_._|/ ",
+	"  <_I_>  ",
+	"   |||   ",
+	"  /_|_\\  "
+];
+
+const FLOWER = [
+    "     ",
+    "     ",
+    "     ",
+    "     ",
+    "     ",
+	" .:. ",
+	"-=o=-",
+	" ':' ",
+	" \\|/ "
+];
+
+function colorizeKnight(ch) {
+	let color = "#aae";
+	return `<span style="color:${color}">${ch}</span>`;
+}
+
+function colorizeFlower(ch) {
+	let color = "#f00";
+	if (ch == "o") { color = "#ff0"; }
+	if (ch == "\\" || ch == "/" || ch == "|") { color = "lime"; }
+	ch = ch.replace(/</, "&lt;").replace(/>/, "&gt;");
+	return `<span style="color:${color}">${ch}</span>`;
+}
+
+function fit$2() {
+	let avail = node$2.parentNode.offsetWidth;
+	node$2.innerHTML = TEST$1;
+	let columns = Math.floor(TEST$1.length*avail/node$2.offsetWidth) - 2;
+
+	let knight = KNIGHT.join("\n").replace(/\S/g, colorizeKnight).split("\n");
+	let flower = FLOWER.join("\n").replace(/\S/g, colorizeFlower).split("\n");
+
+	let result = [];
+	for (let i=0;i<knight.length;i++) {
+		let remain = columns;
+		remain -= PAD.length; // padding
+		remain -= 9; // knight
+		remain -= 5; // flower
+
+		let row = `${PAD}${knight[i]}${new Array(remain+1).join(" ")}${flower[i]}`;
+		result.push(row);
+	}
+
+	let final = `<span class='grass'>${new Array(columns+1).join("^")}</span>`;
+	result.push(final);
+
+	node$2.innerHTML = result.join("\n");
+
+}
+
+function getNode$2() {
+	return node$2;
+}
+
+let node$3 = document.createElement("div");
+node$3.classList.add("text");
+node$3.innerHTML = 
+`Into a profound slumber she sank, surrounded only by dense brambles, thorns and roses.
+Many advantureres tried to find and rescue her, but none came back...
+<br/><br/><span>Hit [Enter] to start the game</span>`;
+
+function getNode$3() {
+	return node$3;
+}
+
+const FACTS = [
+	"This game was created in one week",
+	"This game was written using rot.js, the JavaScript Roguelike Toolkit",
+	"The tower is procedurally generated. Try resizing this page!",
+	"You can reload this page to get another Fun Fact",
+	"The original Sleeping Beauty fairy tale was written by Charles Perrault",
+	"This game is best played with a maximized browser window"
+];
+
+let node$4 = document.createElement("div");
+node$4.classList.add("funfact");
+node$4.innerHTML = `Fun Fact: ${FACTS.random()}`;
+
+function getNode$4() {
+	return node$4;
+}
+
+let resolve$1 = null;
+
+function handleKeyEvent$1(e) {
+	if (!isEnter(e)) { return; }
+	pop();
+	window.removeEventListener("resize", onResize);
+	resolve$1();
+}
+
+function onResize(e) {
+	fit$1();
+	fit$2();
+}
+
+function start$1(node) {
+	node.appendChild(getNode$1());
+	node.appendChild(getNode$2());
+	node.appendChild(getNode$3());
+	node.appendChild(getNode());
+	node.appendChild(getNode$4());
+
+	fit$1();
+	fit$2();
+
+	push({handleKeyEvent: handleKeyEvent$1});
+	window.addEventListener("resize", onResize);
+
+	return new Promise(r => resolve$1 = r);
+}
+
 const ROOM = new Floor();
 const CORRIDOR = new Floor();
 const WALL = new Wall();
@@ -1239,9 +1497,6 @@ let seed = Date.now();
 console.log("seed", seed);
 ROT.RNG.setSeed(seed);
 
-init(document.querySelector("#map"));
-init$1(document.querySelector("#combat"));
-
 function switchToLevel(level, xy) {
 	clear();
 
@@ -1256,12 +1511,12 @@ console.time("generate");
 let level = generate(1);
 console.timeEnd("generate");
 
-push({
-	handleKeyEvent() {
-		pop();
-		switchToLevel(level, level.start);
-		loop();
-	}
+init(document.querySelector("#map"));
+init$1(document.querySelector("#combat"));
+
+start$1(document.querySelector("#intro")).then(() => {
+	switchToLevel(level, level.start);
+	loop();
 });
 
 }());

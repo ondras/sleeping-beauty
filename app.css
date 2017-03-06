@@ -10,6 +10,9 @@ body {
 body > * {
   position: absolute;
 }
+.hidden {
+  opacity: 0;
+}
 #map {
   left: 0;
   top: 0;
@@ -38,4 +41,53 @@ body > * {
 }
 canvas {
   position: relative;
+}
+#intro {
+  line-height: 1.2;
+  font-size: 18px;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+}
+#intro > * {
+  position: absolute;
+}
+#intro .title {
+  white-space: pre;
+  left: 2ch;
+  top: 1.2em;
+  color: goldenrod;
+}
+#intro .tower {
+  white-space: pre;
+  right: 6ch;
+  bottom: 4.2em;
+}
+#intro .tower span:not(.transparent) {
+  background-color: #222;
+}
+#intro .text {
+  left: 16ch;
+  right: 28ch;
+  bottom: 7.8em;
+  color: #aaa;
+}
+#intro .text span {
+  color: #fff;
+}
+#intro .bottom {
+  bottom: 3em;
+  right: 1ch;
+  white-space: pre;
+}
+#intro .bottom .grass {
+  color: #3c3;
+}
+#intro .funfact {
+  color: #666;
+  left: 1ch;
+  bottom: 1.2em;
+  right: 1ch;
+  text-align: center;
 }
