@@ -62,3 +62,14 @@ export function draw(board, cursor, highlight = []) {
 export function init(parent) {
 	parent.appendChild(CTX.canvas);
 }
+
+export function activate() {
+	let node = CTX.canvas.parentNode;
+	node.classList.remove("hidden");
+	node.classList.remove("inactive");
+}
+
+export function deactivate() {
+	let node = CTX.canvas.parentNode;
+	node.classList.add("inactive");
+}

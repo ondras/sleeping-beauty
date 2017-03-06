@@ -13,6 +13,7 @@ body {
 
 	& > * {
 		position: absolute;
+		transition: opacity 1000ms;
 	}
 }
 
@@ -20,39 +21,12 @@ body {
 	opacity: 0;
 }
 
-#map {
-	left: 0;
-	top: 0;
-	width: unit(@w, vw);
-	height: unit(@h, vh);
-
-	overflow: hidden;
-}
-
-#log {
-	left: 0;
-	bottom: 0;
-	width: unit(@w, vw);
-	height: unit(100-@h, vh);
-}
-
-#combat {
-	right: 0;
-	top: 0;
-	width: unit(100-@w, vw);
-	height: unit(@h, vh);
-}
-
-#inventory {
-	background-color: pink;
-	right: 0;
-	bottom: 0;
-	width: unit(100-@w, vw);
-	height: unit(100-@h, vh);
-}
-
-canvas {
-	position: relative;
+.inactive {
+	opacity: 0.6;
 }
 
 @import "intro.less";
+@import "map.less";
+@import "inventory.less";
+@import "combat.less";
+@import "log.less";

@@ -28,6 +28,7 @@ map.init(document.querySelector("#map"));
 combat.init(document.querySelector("#combat"));
 
 intro.start(document.querySelector("#intro")).then(() => {
+	map.activate();
 	switchToLevel(level, level.start);
 	actors.loop();
 });

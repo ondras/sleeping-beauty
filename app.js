@@ -435,11 +435,15 @@ class Memory {
 	}
 }
 
+const FONT_BASE = 18;
+const FONT_ZOOM = 150;
+const ZOOM_TIME = 1500;
+
 let level$1 = null;
 let options = {
 	width: 1,
 	height: 1,
-	fontSize: 18,
+	fontSize: FONT_BASE,
 	fontFamily: "metrickal, monospace"
 };
 let display = new ROT.Display(options);
@@ -447,17 +451,14 @@ let center = new XY(0, 0); // level coords in the middle of the map
 let memory = null;
 let memories = {};
 
-// level XY to display XY; center = middle point
-function levelToDisplay(xy) {
-	let half = new XY(options.width, options.height).scale(0.5).floor();
 
+function levelToDisplay(xy) { // level XY to display XY; center = middle point
+	let half = new XY(options.width, options.height).scale(0.5).floor();
 	return xy.minus(center).plus(half);
 }
 
-// display XY to level XY; middle point = center
-function displayToLevel(xy) {
+function displayToLevel(xy) { // display XY to level XY; middle point = center
 	let half = new XY(options.width, options.height).scale(0.5).floor();
-
 	return xy.minus(half).plus(center);
 }
 
@@ -509,6 +510,24 @@ function setLevel(l) {
 	setCenter(center);
 }
 
+function zoom(size2) {
+	let node = display.getContainer();
+	node.style.transition = `transform ${ZOOM_TIME}ms`;
+
+	let size1 = options.fontSize;
+	let scale = size2/size1;
+
+	node.style.transform = `scale(${scale})`;
+	setTimeout(() => {
+		options.fontSize = size2;
+		display.setOptions(options);
+		fit();
+		setCenter(center);
+		node.style.transition = "";
+		node.style.transform = "";
+	}, ZOOM_TIME);
+}
+
 function handleMessage(message, publisher, data) {
 	switch (message) {
 		case "visibility-change":
@@ -522,11 +541,30 @@ function handleMessage(message, publisher, data) {
 	}
 }
 
+function zoomIn() {
+	return zoom(FONT_ZOOM);
+}
+
+function zoomOut() {
+	return zoom(FONT_BASE);
+}
+
 function init(parent) {
 	parent.appendChild(display.getContainer());
 	fit();
 	subscribe("visual-change", handleMessage);
 	subscribe("visibility-change", handleMessage);
+}
+
+function activate() {
+	let node = display.getContainer().parentNode;
+	node.classList.remove("hidden");
+	node.classList.remove("inactive");
+}
+
+function deactivate() {
+	let node = display.getContainer().parentNode;
+	node.classList.add("inactive");
 }
 
 const SPEED = 10; // cells per second
@@ -782,21 +820,37 @@ function init$2(parent) {
 	parent.appendChild(CTX.canvas);
 }
 
+function activate$2() {
+	let node = CTX.canvas.parentNode;
+	node.classList.remove("hidden");
+	node.classList.remove("inactive");
+}
+
+function deactivate$1() {
+	let node = CTX.canvas.parentNode;
+	node.classList.add("inactive");
+}
+
 let board = new Board().randomize();
 let resolve = null;
 let enemy = null;
 let cursor = new XY(0, 0);
 
+function end() {
+	activate();
+	zoomOut();
+	deactivate$1();
+	pop();
+	resolve();
+}
+
 function doDamage(attacker, defender, options = {}) {
 	console.log("%s attacks %s (%o)", attacker, defender, options);
 	defender.damage(5);
-	if (!defender.isAlive()) {
-		pop();
-		resolve();
-	}
+	if (!defender.isAlive()) { end(); }
 }
 
-function activate(xy) {
+function activate$1(xy) {
 	let segment = board.findSegment(xy);
 	if (!segment || segment.length < 2) { return; }
 
@@ -833,7 +887,7 @@ function checkSegments() {
 }
 
 function handleKeyEvent(e) {
-	if (isEnter(e)) { return activate(cursor); }
+	if (isEnter(e)) { return activate$1(cursor); }
 
 	let dir = getDirection(e);
 	if (!dir) { return; }
@@ -860,6 +914,10 @@ function init$1(parent) {
 }
 
 function start(e) {
+	deactivate();
+	zoomIn();
+	activate$2();
+
 	enemy = e;
 	let promise = new Promise(r => resolve = r);
 	// fixme visuals
@@ -887,8 +945,8 @@ const WIDTH = 13;
 
 const TEST = new Array(11).join("\n");
 
-let node = document.createElement("div");
-node.classList.add("tower");
+let node$1 = document.createElement("div");
+node$1.classList.add("tower");
 
 function mid() {
 	let content = "";
@@ -950,9 +1008,9 @@ function colorize(ch, index, str) {
 }
 
 function fit$1() {
-	let avail = node.parentNode.offsetHeight;
-	node.innerHTML = TEST;
-	let rows = Math.floor(TEST.length*avail/node.offsetHeight) - 4;
+	let avail = node$1.parentNode.offsetHeight;
+	node$1.innerHTML = TEST;
+	let rows = Math.floor(TEST.length*avail/node$1.offsetHeight) - 4;
 
 	rows -= START.length;
 	rows -= END.length;
@@ -963,16 +1021,16 @@ function fit$1() {
 	}
 	all = all.concat(END);
 
-	node.innerHTML = all.join("\n").replace(/\S/g, colorize);
+	node$1.innerHTML = all.join("\n").replace(/\S/g, colorize);
 }
 
 function getNode() {
-	return node;
+	return node$1;
 }
 
-let node$1 = document.createElement("div");
-node$1.classList.add("title");
-node$1.innerHTML =                                               
+let node$2 = document.createElement("div");
+node$2.classList.add("title");
+node$2.innerHTML =                                               
 ".oPYo. 8                       o             \n" +
 "8      8                                     \n" +
 "`Yooo. 8 .oPYo. .oPYo. .oPYo. o8 odYo. .oPYo.\n" +
@@ -991,12 +1049,12 @@ node$1.innerHTML =
 "                                    ooP'     ";
 
 function getNode$1() {
-	return node$1;
+	return node$2;
 }
 
-let node$2 = document.createElement("div");
-node$2.classList.add("bottom");
-node$2.innerHTML = "BOTTOM";
+let node$3 = document.createElement("div");
+node$3.classList.add("bottom");
+node$3.innerHTML = "BOTTOM";
 
 const TEST$1 = "xxxxxxxxxx";
 const PAD = "  ";
@@ -1039,9 +1097,9 @@ function colorizeFlower(ch) {
 }
 
 function fit$2() {
-	let avail = node$2.parentNode.offsetWidth;
-	node$2.innerHTML = TEST$1;
-	let columns = Math.floor(TEST$1.length*avail/node$2.offsetWidth) - 2;
+	let avail = node$3.parentNode.offsetWidth;
+	node$3.innerHTML = TEST$1;
+	let columns = Math.floor(TEST$1.length*avail/node$3.offsetWidth) - 2;
 
 	let knight = KNIGHT.join("\n").replace(/\S/g, colorizeKnight).split("\n");
 	let flower = FLOWER.join("\n").replace(/\S/g, colorizeFlower).split("\n");
@@ -1060,23 +1118,23 @@ function fit$2() {
 	let final = `<span class='grass'>${new Array(columns+1).join("^")}</span>`;
 	result.push(final);
 
-	node$2.innerHTML = result.join("\n");
+	node$3.innerHTML = result.join("\n");
 
 }
 
 function getNode$2() {
-	return node$2;
+	return node$3;
 }
 
-let node$3 = document.createElement("div");
-node$3.classList.add("text");
-node$3.innerHTML = 
+let node$4 = document.createElement("div");
+node$4.classList.add("text");
+node$4.innerHTML = 
 `Into a profound slumber she sank, surrounded only by dense brambles, thorns and roses.
 Many advantureres tried to find and rescue her, but none came back...
 <br/><br/><span>Hit [Enter] to start the game</span>`;
 
 function getNode$3() {
-	return node$3;
+	return node$4;
 }
 
 const FACTS = [
@@ -1088,20 +1146,24 @@ const FACTS = [
 	"This game is best played with a maximized browser window"
 ];
 
-let node$4 = document.createElement("div");
-node$4.classList.add("funfact");
-node$4.innerHTML = `Fun Fact: ${FACTS.random()}`;
+let node$5 = document.createElement("div");
+node$5.classList.add("funfact");
+node$5.innerHTML = `Fun Fact: ${FACTS.random()}`;
 
 function getNode$4() {
-	return node$4;
+	return node$5;
 }
 
 let resolve$1 = null;
+let node = null;
 
 function handleKeyEvent$1(e) {
 	if (!isEnter(e)) { return; }
+
 	pop();
 	window.removeEventListener("resize", onResize);
+	node.parentNode.removeChild(node);
+
 	resolve$1();
 }
 
@@ -1110,7 +1172,8 @@ function onResize(e) {
 	fit$2();
 }
 
-function start$1(node) {
+function start$1(n) {
+	node = n;
 	node.appendChild(getNode$1());
 	node.appendChild(getNode$2());
 	node.appendChild(getNode$3());
@@ -1515,6 +1578,7 @@ init(document.querySelector("#map"));
 init$1(document.querySelector("#combat"));
 
 start$1(document.querySelector("#intro")).then(() => {
+	activate();
 	switchToLevel(level, level.start);
 	loop();
 });

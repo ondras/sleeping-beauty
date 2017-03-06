@@ -6,11 +6,15 @@ import * as text from "./text.js";
 import * as funfact from "./funfact.js";
 
 let resolve = null;
+let node = null;
 
 function handleKeyEvent(e) {
 	if (!keyboard.isEnter(e)) { return; }
+
 	keyboard.pop();
 	window.removeEventListener("resize", onResize);
+	node.parentNode.removeChild(node);
+
 	resolve();
 }
 
@@ -19,7 +23,8 @@ function onResize(e) {
 	bottom.fit();
 }
 
-export function start(node) {
+export function start(n) {
+	node = n;
 	node.appendChild(title.getNode());
 	node.appendChild(bottom.getNode());
 	node.appendChild(text.getNode());

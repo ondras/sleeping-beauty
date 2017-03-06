@@ -3,6 +3,7 @@ import XY from "util/xy.js";
 
 import * as ui from "ui/combat.js";
 import * as keyboard from "util/keyboard.js";
+import * as map from "ui/map/map.js";
 
 import pc from "being/pc.js";
 import { ATTACK_1, ATTACK_2, MAGIC_1, MAGIC_2 } from "conf.js";
@@ -12,13 +13,18 @@ let resolve = null;
 let enemy = null;
 let cursor = new XY(0, 0);
 
+function end() {
+	map.activate();
+	map.zoomOut();
+	ui.deactivate();
+	keyboard.pop();
+	resolve();
+}
+
 function doDamage(attacker, defender, options = {}) {
 	console.log("%s attacks %s (%o)", attacker, defender, options);
 	defender.damage(5);
-	if (!defender.isAlive()) {
-		keyboard.pop();
-		resolve();
-	}
+	if (!defender.isAlive()) { end(); }
 }
 
 function activate(xy) {
@@ -85,6 +91,10 @@ export function init(parent) {
 }
 
 export function start(e) {
+	map.deactivate();
+	map.zoomIn();
+	ui.activate();
+
 	enemy = e;
 	let promise = new Promise(r => resolve = r);
 	// fixme visuals

@@ -2,11 +2,15 @@ import XY from "util/xy.js";
 import * as pubsub from "util/pubsub.js";
 import Memory from "./memory.js";
 
+const FONT_BASE = 18;
+const FONT_ZOOM = 150;
+const ZOOM_TIME = 1500;
+
 let level = null;
 let options = {
 	width: 1,
 	height: 1,
-	fontSize: 18,
+	fontSize: FONT_BASE,
 	fontFamily: "metrickal, monospace"
 }
 let display = new ROT.Display(options);
@@ -14,17 +18,14 @@ let center = new XY(0, 0); // level coords in the middle of the map
 let memory = null;
 let memories = {};
 
-// level XY to display XY; center = middle point
-function levelToDisplay(xy) {
-	let half = new XY(options.width, options.height).scale(0.5).floor();
 
+function levelToDisplay(xy) { // level XY to display XY; center = middle point
+	let half = new XY(options.width, options.height).scale(0.5).floor();
 	return xy.minus(center).plus(half);
 }
 
-// display XY to level XY; middle point = center
-function displayToLevel(xy) {
+function displayToLevel(xy) { // display XY to level XY; middle point = center
 	let half = new XY(options.width, options.height).scale(0.5).floor();
-
 	return xy.minus(half).plus(center);
 }
 
@@ -76,13 +77,11 @@ export function setLevel(l) {
 	setCenter(center);
 }
 
-function zoom() {
-	let time = 1500;
+function zoom(size2) {
 	let node = display.getContainer();
-	node.style.transition = `transform ${time}ms`;
+	node.style.transition = `transform ${ZOOM_TIME}ms`;
 
 	let size1 = options.fontSize;
-	let size2 = 150;
 	let scale = size2/size1;
 
 	node.style.transform = `scale(${scale})`;
@@ -93,7 +92,7 @@ function zoom() {
 		setCenter(center);
 		node.style.transition = "";
 		node.style.transform = "";
-	}, time);
+	}, ZOOM_TIME);
 }
 
 function handleMessage(message, publisher, data) {
@@ -109,9 +108,28 @@ function handleMessage(message, publisher, data) {
 	}
 }
 
+export function zoomIn() {
+	return zoom(FONT_ZOOM);
+}
+
+export function zoomOut() {
+	return zoom(FONT_BASE);
+}
+
 export function init(parent) {
 	parent.appendChild(display.getContainer());
 	fit();
 	pubsub.subscribe("visual-change", handleMessage);
 	pubsub.subscribe("visibility-change", handleMessage);
+}
+
+export function activate() {
+	let node = display.getContainer().parentNode;
+	node.classList.remove("hidden");
+	node.classList.remove("inactive");
+}
+
+export function deactivate() {
+	let node = display.getContainer().parentNode;
+	node.classList.add("inactive");
 }
