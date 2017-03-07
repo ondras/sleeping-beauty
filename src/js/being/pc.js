@@ -138,6 +138,7 @@ class PC extends Being {
 		}
 
 		if (entity instanceof Item) {
+			// fixme tutorial
 			log.add("To pick it up, move there and press {#fff}Enter{}.");
 			return;
 		}
