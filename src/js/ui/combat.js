@@ -60,6 +60,9 @@ export function draw(board, cursor, highlight = []) {
 }
 
 export function init(parent) {
+	let heading = document.createElement("p");
+	heading.innerHTML = "Game of Thorns";
+	parent.appendChild(heading);
 	parent.appendChild(CTX.canvas);
 }
 

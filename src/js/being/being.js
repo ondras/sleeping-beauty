@@ -8,17 +8,21 @@ export default class Being extends Entity {
 		this.blocks = BLOCKS_MOVEMENT;
 		this._xy = null;
 		this._level = null;
-		this._hp = 10;
+
+		this.maxhp = 10;
+		this.hp = this.maxhp;
+		this.maxmana = 10;
+		this.mana = this.maxmana;
+		this.mana = 0;
 	}
 
 	getXY() { return this._xy; }
 	getLevel() { return this._level; }
-	isAlive() { return (this._hp > 0); }
 
 	damage(amount) {
-		if (this._hp == 0) { return; }
-		this._hp = Math.max(0, this._hp-amount);
-		if (this._hp == 0) { this.die(); }
+		if (this.hp <= 0) { return; }
+		this.hp = Math.max(0, this.hp-amount);
+		if (this.hp <= 0) { this.die(); }
 	}
 	
 	die() {

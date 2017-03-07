@@ -3,7 +3,7 @@ import * as pubsub from "util/pubsub.js";
 import Memory from "./memory.js";
 
 const FONT_BASE = 18;
-const FONT_ZOOM = 150;
+const FONT_ZOOM = 120;
 const ZOOM_TIME = 1500;
 
 let level = null;

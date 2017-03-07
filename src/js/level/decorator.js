@@ -28,7 +28,7 @@ export default function decorate(level) {
 	level.rooms.forEach(room => level.carveDoors(room));	
 
 	let rat = new Rat();
-//	rat.moveTo(level.start.plus(new XY(3, 0)), level);
+	rat.moveTo(level.start.plus(new XY(3, 0)), level);
 	level.setItem(level.start.plus(new XY(1, 0)), new Sword());
 	level.setItem(level.start.plus(new XY(2, 0)), new Axe());
 	level.setItem(level.start.plus(new XY(3, 0)), new Shield());

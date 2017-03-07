@@ -201,17 +201,21 @@ class Being extends Entity {
 		this.blocks = BLOCKS_MOVEMENT;
 		this._xy = null;
 		this._level = null;
-		this._hp = 10;
+
+		this.maxhp = 10;
+		this.hp = this.maxhp;
+		this.maxmana = 10;
+		this.mana = this.maxmana;
+		this.mana = 0;
 	}
 
 	getXY() { return this._xy; }
 	getLevel() { return this._level; }
-	isAlive() { return (this._hp > 0); }
 
 	damage(amount) {
-		if (this._hp == 0) { return; }
-		this._hp = Math.max(0, this._hp-amount);
-		if (this._hp == 0) { this.die(); }
+		if (this.hp <= 0) { return; }
+		this.hp = Math.max(0, this.hp-amount);
+		if (this.hp <= 0) { this.die(); }
 	}
 	
 	die() {
@@ -323,7 +327,10 @@ function update() {
 function buildStatus() {
 	// fixme colors?
 	let node = document.createElement("li");
-	let str = "100% health, 100% mana";
+
+	let hp = buildPercentage(pc.hp / pc.maxhp);
+	let mana = buildPercentage(pc.mana / pc.maxmana);
+	let str = `${hp} health, ${mana} mana`;
 
 	let gold = pc.inventory.getItemByType("gold");
 	let coins = (gold ? gold.amount : 0);
@@ -335,6 +342,13 @@ function buildStatus() {
 
 	node.innerHTML = str;
 	return node;
+}
+
+function buildPercentage(frac) {
+	let color = ROT.Color.interpolateHSL([255, 0, 0], [0, 255, 0], frac);
+	color = ROT.Color.toRGB(color);
+	let percent = Math.round(frac*100);
+	return `<span style="color:${color}">${percent}%</span>`;
 }
 
 function buildItems() {
@@ -942,6 +956,9 @@ function draw(board, cursor, highlight = []) {
 }
 
 function init$4(parent) {
+	let heading = document.createElement("p");
+	heading.innerHTML = "Game of Thorns";
+	parent.appendChild(heading);
 	parent.appendChild(CTX.canvas);
 }
 
@@ -1014,7 +1031,7 @@ class Memory {
 }
 
 const FONT_BASE = 18;
-const FONT_ZOOM = 150;
+const FONT_ZOOM = 120;
 const ZOOM_TIME = 1500;
 
 let level = null;
@@ -1162,7 +1179,7 @@ function end() {
 function doDamage(attacker, defender, options = {}) {
 	console.log("%s attacks %s (%o)", attacker, defender, options);
 	defender.damage(5);
-	if (!defender.isAlive()) { end(); }
+	if (defender.hp <= 0) { end(); }
 }
 
 function activate$$1(xy) {
@@ -1237,12 +1254,11 @@ function start(e) {
 		tutorial = true;
 		add$1("Combat in Sleeping Beauty happens by playing the {goldenrod}Game of Thorns{} on a square game board.");
 		add$1("Match sequences ({#fff}direction keys{} and {#fff}Enter{}) of colored blocks to perform individual actions. This includes both your attacks as well as your enemy's.");
-		add$1("Note that certain items in your inventory can modify the frequency of colors on the game boad.");
+		add$1("Note that certain items in your inventory can modify the frequency of colors on the game board.");
 	}
 
 	enemy = e;
 	let promise = new Promise(r => resolve = r);
-	// fixme visuals
 	push({handleKeyEvent});
 
 	return promise;
@@ -1784,13 +1800,13 @@ class Sword extends Wearable {
 
 class Axe extends Wearable {
 	constructor() {
-		super("weapon", {ch:"(", fg:"#eef", name:"axe"});
+		super("weapon", {ch:")", fg:"#eef", name:"axe"});
 	}
 }
 
 class Shield extends Wearable {
 	constructor() {
-		super("shield", {ch:")", fg:"#eef", name:"shield"});
+		super("shield", {ch:"]", fg:"#eef", name:"shield"});
 	}
 }
 
@@ -1817,7 +1833,7 @@ function decorate(level) {
 	level.rooms.forEach(room => level.carveDoors(room));	
 
 	let rat = new Rat();
-//	rat.moveTo(level.start.plus(new XY(3, 0)), level);
+	rat.moveTo(level.start.plus(new XY(3, 0)), level);
 	level.setItem(level.start.plus(new XY(1, 0)), new Sword());
 	level.setItem(level.start.plus(new XY(2, 0)), new Axe());
 	level.setItem(level.start.plus(new XY(3, 0)), new Shield());

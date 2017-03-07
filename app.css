@@ -6,6 +6,7 @@
   box-sizing: border-box;
 }
 body {
+  line-height: 1.2;
   margin: 0;
   font-family: Metrickal, monospace;
   background-color: #000;
@@ -21,7 +22,6 @@ body > * {
   opacity: 0.6;
 }
 #intro {
-  line-height: 1.2;
   font-size: 18px;
   left: 0;
   top: 0;
@@ -99,13 +99,22 @@ body > * {
   bottom: 0;
   width: 40vw;
   height: 40vh;
+  border: 4px solid #000;
   color: #aaa;
+}
+#status ul {
+  margin: 1.2em 0;
+  padding-left: 4ch;
 }
 #combat {
   right: 0;
   top: 0;
   width: 40vw;
   height: 60vh;
+}
+#combat p {
+  text-align: center;
+  color: goldenrod;
 }
 #log {
   left: 0;
@@ -114,7 +123,7 @@ body > * {
   height: 40vh;
   color: #aaa;
   overflow: hidden;
-  padding: 0.5em 0.5ch;
+  border: 4px solid #000;
 }
 #log p {
   margin-top: 0;

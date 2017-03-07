@@ -31,12 +31,12 @@ export class Sword extends Wearable {
 
 export class Axe extends Wearable {
 	constructor() {
-		super("weapon", {ch:"(", fg:"#eef", name:"axe"});
+		super("weapon", {ch:")", fg:"#eef", name:"axe"});
 	}
 }
 
 export class Shield extends Wearable {
 	constructor() {
-		super("shield", {ch:")", fg:"#eef", name:"shield"});
+		super("shield", {ch:"]", fg:"#eef", name:"shield"});
 	}
 }

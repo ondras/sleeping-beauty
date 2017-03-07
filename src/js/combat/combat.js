@@ -27,7 +27,7 @@ function end() {
 function doDamage(attacker, defender, options = {}) {
 	console.log("%s attacks %s (%o)", attacker, defender, options);
 	defender.damage(5);
-	if (!defender.isAlive()) { end(); }
+	if (defender.hp <= 0) { end(); }
 }
 
 function activate(xy) {
@@ -102,12 +102,11 @@ export function start(e) {
 		tutorial = true;
 		log.add("Combat in Sleeping Beauty happens by playing the {goldenrod}Game of Thorns{} on a square game board.");
 		log.add("Match sequences ({#fff}direction keys{} and {#fff}Enter{}) of colored blocks to perform individual actions. This includes both your attacks as well as your enemy's.");
-		log.add("Note that certain items in your inventory can modify the frequency of colors on the game boad.");
+		log.add("Note that certain items in your inventory can modify the frequency of colors on the game board.");
 	}
 
 	enemy = e;
 	let promise = new Promise(r => resolve = r);
-	// fixme visuals
 	keyboard.push({handleKeyEvent});
 
 	return promise;
