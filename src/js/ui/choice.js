@@ -12,7 +12,7 @@ function end(value) {
 function handleKeyEvent(e) {
 	if (keyboard.isEscape(e)) { return end(null); }
 
-	let number = keyboard.getNumber();
+	let number = keyboard.getNumber(e);
 	if (!number) { return end(null); }
 
 	if (number > 0 && number <= count) { end(number); }

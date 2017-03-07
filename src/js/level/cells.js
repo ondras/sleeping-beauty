@@ -36,7 +36,7 @@ export class Door extends Entity {
 	isOpen() { return this._isOpen; }
 
 	blocks() {
-		return (this._open ? BLOCKS_NONE : BLOCKS_LIGHT);
+		return (this._isOpen ? BLOCKS_NONE : BLOCKS_LIGHT);
 	}
 
 	_close() {

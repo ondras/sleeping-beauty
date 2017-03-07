@@ -403,7 +403,7 @@ class Door extends Entity {
 	isOpen() { return this._isOpen; }
 
 	blocks() {
-		return (this._open ? BLOCKS_NONE : BLOCKS_LIGHT);
+		return (this._isOpen ? BLOCKS_NONE : BLOCKS_LIGHT);
 	}
 
 	_close() {
@@ -460,7 +460,7 @@ function end$1(value) {
 function handleKeyEvent$1(e) {
 	if (isEscape(e)) { return end$1(null); }
 
-	let number = getNumber();
+	let number = getNumber(e);
 	if (!number) { return end$1(null); }
 
 	if (number > 0 && number <= count) { end$1(number); }
@@ -584,6 +584,17 @@ class PC extends Being {
 
 	_interact(xy) {
 		let entity = this._level.getEntity(xy);
+		if (entity instanceof Door) {
+			if (entity.isOpen()) {
+				add$1("You close the door.");
+				entity.close();
+			} else {
+				add$1("You open the door.");
+				entity.open();
+			}
+			return;
+		}
+
 		add$1("You see %a.", entity);
 
 		if (entity instanceof Being) {
@@ -596,15 +607,7 @@ class PC extends Being {
 			return;
 		}
 */
-		if (entity instanceof Door) {
-			if (entity.isOpen()) {
-				add$1("You close the door.");
-				entity.close();
-			} else {
-				add$1("You open the door.");
-				entity.open();
-			}
-		}
+		add$1("No interaction is possible.");
 	}
 
 	_move(xy) {

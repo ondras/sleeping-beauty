@@ -116,6 +116,17 @@ class PC extends Being {
 
 	_interact(xy) {
 		let entity = this._level.getEntity(xy);
+		if (entity instanceof cells.Door) {
+			if (entity.isOpen()) {
+				log.add("You close the door.");
+				entity.close();
+			} else {
+				log.add("You open the door.");
+				entity.open();
+			}
+			return;
+		}
+
 		log.add("You see %a.", entity);
 
 		if (entity instanceof Being) {
@@ -128,15 +139,7 @@ class PC extends Being {
 			return;
 		}
 */
-		if (entity instanceof cells.Door) {
-			if (entity.isOpen()) {
-				log.add("You close the door.");
-				entity.close();
-			} else {
-				log.add("You open the door.");
-				entity.open();
-			}
-		}
+		log.add("No interaction is possible.");
 	}
 
 	_move(xy) {
