@@ -1,5 +1,6 @@
 import Entity, { BLOCKS_NONE, BLOCKS_LIGHT } from "entity.js";
 import * as log from "ui/log.js";
+import * as pubsub from "util/pubsub.js";
 
 export class Floor extends Entity {
 	constructor() {
@@ -29,25 +30,35 @@ export class Tree extends Entity {
 export class Door extends Entity {
 	constructor() {
 		super({ch:"/", fg:"#963"});
-		ROT.RNG.getUniform() > 0.5 ? this.open() : this.close();
+		ROT.RNG.getUniform() > 0.5 ? this._open() : this._close();
 	}
 
-	isOpen() { return this._open; }
+	isOpen() { return this._isOpen; }
 
 	blocks() {
 		return (this._open ? BLOCKS_NONE : BLOCKS_LIGHT);
 	}
 
-	close() {
+	_close() {
 		this._visual.ch = "+";
-		this._open = false;
+		this._isOpen = false;
 		this._visual.name = "closed door";
 	}
 
-	open() {
+	_open() {
 		this._visual.ch = "/";
-		this._open = true;
+		this._isOpen = true;
 		this._visual.name = "open door";
+	}
+
+	close() {
+		this._close();
+		pubsub.publish("topology-change", this);
+	}
+
+	open() {
+		this._open();
+		pubsub.publish("topology-change", this);
 	}
 }
 

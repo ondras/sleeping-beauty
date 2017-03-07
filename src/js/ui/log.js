@@ -6,6 +6,7 @@ export function add() {
 	str = str.replace(/{(.*?)}(.*?){}/g, (match, color, str) => {
 		return `<span style="color:${color}">${str}</span>`;
 	});
+	str = str.replace(/\n/g, "<br/>");
 	
 	let item = document.createElement("span");
 	item.innerHTML = `${str} `;

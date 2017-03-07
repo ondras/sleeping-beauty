@@ -290,7 +290,17 @@ function isEnter(e) {
 	return (e.keyCode == 13);
 }
 
+function isEscape(e) {
+	if (e.type != "keydown") { return null; }
+	return (e.keyCode == 27);
+}
 
+function getNumber(e) {
+	if (e.type != "keypress") { return null; }
+	let num = e.charCode - "0".charCodeAt(0);
+	if (num < 0 || num > 9) { return null; }
+	return num;
+}
 
 function push(consumer) {
 	CONSUMERS.push(consumer);
@@ -337,6 +347,7 @@ function add$1() {
 	str = str.replace(/{(.*?)}(.*?){}/g, (match, color, str) => {
 		return `<span style="color:${color}">${str}</span>`;
 	});
+	str = str.replace(/\n/g, "<br/>");
 	
 	let item = document.createElement("span");
 	item.innerHTML = `${str} `;
@@ -386,25 +397,35 @@ class Tree extends Entity {
 class Door extends Entity {
 	constructor() {
 		super({ch:"/", fg:"#963"});
-		ROT.RNG.getUniform() > 0.5 ? this.open() : this.close();
+		ROT.RNG.getUniform() > 0.5 ? this._open() : this._close();
 	}
 
-	isOpen() { return this._open; }
+	isOpen() { return this._isOpen; }
 
 	blocks() {
 		return (this._open ? BLOCKS_NONE : BLOCKS_LIGHT);
 	}
 
-	close() {
+	_close() {
 		this._visual.ch = "+";
-		this._open = false;
+		this._isOpen = false;
 		this._visual.name = "closed door";
 	}
 
-	open() {
+	_open() {
 		this._visual.ch = "/";
-		this._open = true;
+		this._isOpen = true;
 		this._visual.name = "open door";
+	}
+
+	close() {
+		this._close();
+		publish("topology-change", this);
+	}
+
+	open() {
+		this._open();
+		publish("topology-change", this);
 	}
 }
 
@@ -428,6 +449,35 @@ const ROOM = new Floor();
 const CORRIDOR = new Floor();
 const WALL = new Wall();
 
+let resolve$1 = null;
+let count = 0;
+
+function end$1(value) {
+	pop();
+	resolve$1(value);
+}
+
+function handleKeyEvent$1(e) {
+	if (isEscape(e)) { return end$1(null); }
+
+	let number = getNumber();
+	if (!number) { return end$1(null); }
+
+	if (number > 0 && number <= count) { end$1(number); }
+}
+
+function choice(options) {
+	count = options.length;
+
+	options.forEach((o, index) => {
+		add$1(`  {#fff}${index+1}{} ${o}\n`);
+	});
+	add$1(`{#fff}0{} or {#fff}Escape{} to abort`);
+
+	push({handleKeyEvent: handleKeyEvent$1});
+	return new Promise(r => resolve$1 = r);
+}
+
 let COMBAT_OPTIONS = {
 	[ATTACK_1]: 10,
 	[ATTACK_2]: 10,
@@ -448,6 +498,8 @@ class PC extends Being {
 		this._resolve = null; // end turn
 		this._blocks = BLOCKS_NONE; // in order to see stuff via FOV...
 		this._fov = {};
+
+		subscribe("topology-change", this);
 	}
 
 	describeThe() { return this.toString(); }
@@ -480,6 +532,14 @@ class PC extends Being {
 			this._interact(xy);
 		} else {
 			this._move(xy);
+		}
+	}
+
+	handleMessage(message, publisher, data) {
+		switch (message) {
+			case "topology-change":
+				this._updateFOV();
+			break;
 		}
 	}
 
@@ -523,9 +583,28 @@ class PC extends Being {
 	}
 
 	_interact(xy) {
-		let cell = this._level.getEntity(xy);
-		cell.isOpen() ? cell.close() : cell.open();
-		this._updateFOV();
+		let entity = this._level.getEntity(xy);
+		add$1("You see %a.", entity);
+
+		if (entity instanceof Being) {
+			choice(["aaaa", "bbbb"]);
+			return;			
+		}
+/*
+		if (entity instanceof Item) {
+			log.add("To pick it up, move on its place and press {#fff}Enter{}.");
+			return;
+		}
+*/
+		if (entity instanceof Door) {
+			if (entity.isOpen()) {
+				add$1("You close the door.");
+				entity.close();
+			} else {
+				add$1("You open the door.");
+				entity.open();
+			}
+		}
 	}
 
 	_move(xy) {
@@ -1048,7 +1127,7 @@ function start(e) {
 	if (!tutorial) {
 		tutorial = true;
 		add$1("Combat in Sleeping Beauty happens by playing the {goldenrod}Game of Thorns{} on a square game board.");
-		add$1("Match sequences of colored blocks to perform individual actions. This includes both your attacks as well as your enemy's.");
+		add$1("Match sequences ({#fff}direction keys{} and {#fff}Enter{}) of colored blocks to perform individual actions. This includes both your attacks as well as your enemy's.");
 		add$1("Note that certain items in your inventory can modify the frequency of colors on the game boad.");
 	}
 
@@ -1288,17 +1367,17 @@ function getNode$4() {
 	return node$6;
 }
 
-let resolve$1 = null;
+let resolve$2 = null;
 let node$1 = null;
 
-function handleKeyEvent$1(e) {
+function handleKeyEvent$2(e) {
 	if (!isEnter(e)) { return; }
 
 	pop();
 	window.removeEventListener("resize", onResize);
 	node$1.parentNode.removeChild(node$1);
 
-	resolve$1();
+	resolve$2();
 }
 
 function onResize(e) {
@@ -1317,10 +1396,10 @@ function start$1(n) {
 	fit$1();
 	fit$2();
 
-	push({handleKeyEvent: handleKeyEvent$1});
+	push({handleKeyEvent: handleKeyEvent$2});
 	window.addEventListener("resize", onResize);
 
-	return new Promise(r => resolve$1 = r);
+	return new Promise(r => resolve$2 = r);
 }
 
 function dangerToRadius(danger) {

@@ -8,6 +8,7 @@ import * as rules from "rules.js";
 import * as pubsub from "util/pubsub.js";
 import * as log from "ui/log.js";
 import * as cells from "level/cells.js";
+import choice from "ui/choice.js";
 
 let COMBAT_OPTIONS = {
 	[ATTACK_1]: 10,
@@ -29,6 +30,8 @@ class PC extends Being {
 		this._resolve = null; // end turn
 		this._blocks = BLOCKS_NONE; // in order to see stuff via FOV...
 		this._fov = {};
+
+		pubsub.subscribe("topology-change", this);
 	}
 
 	describeThe() { return this.toString(); }
@@ -61,6 +64,14 @@ class PC extends Being {
 			this._interact(xy);
 		} else {
 			this._move(xy);
+		}
+	}
+
+	handleMessage(message, publisher, data) {
+		switch (message) {
+			case "topology-change":
+				this._updateFOV();
+			break;
 		}
 	}
 
@@ -104,9 +115,28 @@ class PC extends Being {
 	}
 
 	_interact(xy) {
-		let cell = this._level.getEntity(xy);
-		cell.isOpen() ? cell.close() : cell.open();
-		this._updateFOV();
+		let entity = this._level.getEntity(xy);
+		log.add("You see %a.", entity);
+
+		if (entity instanceof Being) {
+			choice(["aaaa", "bbbb"]);
+			return;			
+		}
+/*
+		if (entity instanceof Item) {
+			log.add("To pick it up, move on its place and press {#fff}Enter{}.");
+			return;
+		}
+*/
+		if (entity instanceof cells.Door) {
+			if (entity.isOpen()) {
+				log.add("You close the door.");
+				entity.close();
+			} else {
+				log.add("You open the door.");
+				entity.open();
+			}
+		}
 	}
 
 	_move(xy) {

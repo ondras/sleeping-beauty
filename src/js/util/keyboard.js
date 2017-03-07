@@ -32,6 +32,11 @@ export function isEnter(e) {
 	return (e.keyCode == 13);
 }
 
+export function isEscape(e) {
+	if (e.type != "keydown") { return null; }
+	return (e.keyCode == 27);
+}
+
 export function getNumber(e) {
 	if (e.type != "keypress") { return null; }
 	let num = e.charCode - "0".charCodeAt(0);

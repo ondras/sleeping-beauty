@@ -101,7 +101,7 @@ export function start(e) {
 	if (!tutorial) {
 		tutorial = true;
 		log.add("Combat in Sleeping Beauty happens by playing the {goldenrod}Game of Thorns{} on a square game board.");
-		log.add("Match sequences of colored blocks to perform individual actions. This includes both your attacks as well as your enemy's.");
+		log.add("Match sequences ({#fff}direction keys{} and {#fff}Enter{}) of colored blocks to perform individual actions. This includes both your attacks as well as your enemy's.");
 		log.add("Note that certain items in your inventory can modify the frequency of colors on the game boad.");
 	}
 
