@@ -3,6 +3,7 @@ import * as cells from "./cells.js";
 import XY from "util/xy.js";
 import { generate } from "./generator.js";
 import { Rat } from "being/enemy.js";
+import { Gold, Sword, Axe, Shield } from "item/items.js";
 
 const levels = {};
 
@@ -27,7 +28,10 @@ export default function decorate(level) {
 	level.rooms.forEach(room => level.carveDoors(room));	
 
 	let rat = new Rat();
-	rat.moveTo(level.start.plus(new XY(3, 0)), level);
+//	rat.moveTo(level.start.plus(new XY(3, 0)), level);
+	level.setItem(level.start.plus(new XY(1, 0)), new Sword());
+	level.setItem(level.start.plus(new XY(2, 0)), new Axe());
+	level.setItem(level.start.plus(new XY(3, 0)), new Shield());
 
 	/* staircase up, always */
 	let up = new cells.Staircase(true, staircaseCallback(level.danger+1, true));

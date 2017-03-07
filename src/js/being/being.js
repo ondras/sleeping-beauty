@@ -5,7 +5,7 @@ import * as actors from "util/actors.js";
 export default class Being extends Entity {
 	constructor(visual) {
 		super(visual);
-		this._blocks = BLOCKS_MOVEMENT;
+		this.blocks = BLOCKS_MOVEMENT;
 		this._xy = null;
 		this._level = null;
 		this._hp = 10;

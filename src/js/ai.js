@@ -15,7 +15,7 @@ function wander(who) {
 
 	let dirs = DIRS.filter(dxy => {
 		let entity = level.getEntity(who.getXY().plus(dxy));
-		return entity.blocks() < BLOCKS_MOVEMENT;
+		return entity.blocks < BLOCKS_MOVEMENT;
 	});
 	
 	if (!dirs.length) { return result; }
@@ -33,7 +33,7 @@ function getCloserToPC(who) {
 	DIRS.forEach(dxy => {
 		let xy = who.getXY().plus(dxy);
 		let entity = who.getLevel().getEntity(xy);
-		if (entity.blocks() >= BLOCKS_MOVEMENT) { return; }
+		if (entity.blocks >= BLOCKS_MOVEMENT) { return; }
 		
 		let dist = xy.dist8(pc.getXY());
 		if (dist < best) {

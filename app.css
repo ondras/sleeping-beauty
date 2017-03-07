@@ -2,6 +2,9 @@
   font-family: Metrickal;
   src: url(Metrickal-Regular.otf);
 }
+* {
+  box-sizing: border-box;
+}
 body {
   margin: 0;
   font-family: Metrickal, monospace;
@@ -24,6 +27,21 @@ body > * {
   top: 0;
   right: 0;
   bottom: 0;
+}
+@media (max-height: 600px), (max-width: 830px) {
+  #intro {
+    font-size: 16px;
+  }
+}
+@media (max-height: 530px), (max-width: 750px) {
+  #intro {
+    font-size: 14px;
+  }
+}
+@media (max-height: 470px), (max-width: 680px) {
+  #intro {
+    font-size: 12px;
+  }
 }
 #intro > * {
   position: absolute;
@@ -76,12 +94,12 @@ body > * {
 #map canvas {
   position: relative;
 }
-#inventory {
-  background-color: pink;
+#status {
   right: 0;
   bottom: 0;
   width: 40vw;
   height: 40vh;
+  color: #aaa;
 }
 #combat {
   right: 0;
@@ -96,6 +114,7 @@ body > * {
   height: 40vh;
   color: #aaa;
   overflow: hidden;
+  padding: 0.5em 0.5ch;
 }
 #log p {
   margin-top: 0;

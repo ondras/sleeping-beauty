@@ -39,7 +39,7 @@ export default class Memory {
 			return entity.getVisual();
 		}
 
-		let fov = pc.getFOV();
+		let fov = pc.fov;
 		if (xy in fov) {
 			this._memoize(xy, this._level.getCell(xy).getVisual()); // memoize cell only
 			return this._level.getEntity(xy).getVisual();

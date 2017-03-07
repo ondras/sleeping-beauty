@@ -1,5 +1,7 @@
 import XY from "util/xy.js";
 import Being from "./being.js";
+import Item from "item/item.js";
+import Inventory from "./inventory.js";
 import { BLOCKS_MOVEMENT, BLOCKS_LIGHT, BLOCKS_NONE } from "entity.js";
 import { ATTACK_1, ATTACK_2, MAGIC_1, MAGIC_2 } from "conf.js";
 
@@ -7,6 +9,7 @@ import * as keyboard from "util/keyboard.js";
 import * as rules from "rules.js";
 import * as pubsub from "util/pubsub.js";
 import * as log from "ui/log.js";
+import * as status from "ui/status.js";
 import * as cells from "level/cells.js";
 import choice from "ui/choice.js";
 
@@ -28,15 +31,15 @@ class PC extends Being {
 	constructor() {
 		super({ch:"@", fg:"#fff", name:"you"});
 		this._resolve = null; // end turn
-		this._blocks = BLOCKS_NONE; // in order to see stuff via FOV...
-		this._fov = {};
+		this.blocks = BLOCKS_NONE; // in order to see stuff via FOV...
+		this.fov = {};
+		this.inventory = new Inventory();
 
 		pubsub.subscribe("topology-change", this);
 	}
 
 	describeThe() { return this.toString(); }
 	describeA() { return this.toString(); }
-	getFOV() { return this._fov; }
 
 	getCombatOption() {
 		return ROT.RNG.getWeightedValue(COMBAT_OPTIONS);
@@ -81,8 +84,11 @@ class PC extends Being {
 
 		this._updateFOV();
 
+		// getEntity not possible, because *we* are standing here :)
+
 		let item = this._level.getItem(this._xy);
 		if (item) {
+			log.add("%A is lying here.", item);
 			return;
 		}
 
@@ -100,15 +106,12 @@ class PC extends Being {
 
 	_activate(xy) { // pick or enter
 		let item = this._level.getItem(xy);
-		if (item) {
-			// fixme pick
-			return;
-		}
+		if (item) { return item.pick(this); }
 
 		let cell = this._level.getCell(xy);
 		if (cell.activate) {
 			cell.activate(this);
-			this._resolve();
+			this._resolve(); // successful cell activation
 		} else {
 			log.add("There is nothing you can do here.");
 		}
@@ -124,7 +127,7 @@ class PC extends Being {
 				log.add("You open the door.");
 				entity.open();
 			}
-			return;
+			return this._resolve(); // successful interaction
 		}
 
 		log.add("You see %a.", entity);
@@ -133,20 +136,18 @@ class PC extends Being {
 			choice(["aaaa", "bbbb"]);
 			return;			
 		}
-/*
+
 		if (entity instanceof Item) {
-			log.add("To pick it up, move on its place and press {#fff}Enter{}.");
+			log.add("To pick it up, move there and press {#fff}Enter{}.");
 			return;
 		}
-*/
-		log.add("No interaction is possible.");
 	}
 
 	_move(xy) {
 		let entity = this._level.getEntity(xy);
-		if (entity.blocks() >= BLOCKS_MOVEMENT) {
+		if (entity.blocks >= BLOCKS_MOVEMENT) {
 			log.add("You bump into %a.", entity);
-			if (!TUTORIAL.door) {
+			if (entity instanceof cells.Door && !TUTORIAL.door) {
 				TUTORIAL.door = true;
 				log.add("To interact with stuff, press both a {#fff}modifier key{} (Ctrl, Alt, Shift or Command) and a {#fff}direction key{} (used for movement).");
 			}
@@ -154,13 +155,13 @@ class PC extends Being {
 		}
 
 		this.moveTo(xy);
-		this._resolve();
+		this._resolve(); // successful movement
 	}
 
 	_updateFOV() {
 		let level = this._level;
 		let fov = new ROT.FOV.PreciseShadowcasting((x, y) => {
-			return level.getEntity(new XY(x, y)).blocks() < BLOCKS_LIGHT;
+			return level.getEntity(new XY(x, y)).blocks < BLOCKS_LIGHT;
 		});
 
 		let newFOV = {};
@@ -169,7 +170,7 @@ class PC extends Being {
 			newFOV[xy] = xy;
 		};
 		fov.compute(this._xy.x, this._xy.y, rules.PC_SIGHT, cb);
-		this._fov = newFOV;
+		this.fov = newFOV;
 
 		pubsub.publish("visibility-change", this, {xy:this._xy});
 	}

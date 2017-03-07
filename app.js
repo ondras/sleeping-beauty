@@ -152,11 +152,10 @@ const BLOCKS_LIGHT = 2;
 class Entity {
 	constructor(visual) {
 		this._visual = visual;
-		this._blocks = BLOCKS_NONE; 
+		this.blocks = BLOCKS_NONE; 
 	}
 
 	getVisual() { return this._visual; }
-	blocks() { return this._blocks; }
 
 	toString() { return this._visual.name; }
 	describeThe() { return `the ${this}`; }
@@ -199,7 +198,7 @@ function loop() {
 class Being extends Entity {
 	constructor(visual) {
 		super(visual);
-		this._blocks = BLOCKS_MOVEMENT;
+		this.blocks = BLOCKS_MOVEMENT;
 		this._xy = null;
 		this._level = null;
 		this._hp = 10;
@@ -237,6 +236,147 @@ class Being extends Entity {
 
 		this._xy && this._level.setBeing(this._xy, this); // draw at new position
 		
+		return this;
+	}
+}
+
+let node;
+let current = null;
+
+function add$1() {
+	let str = String.format.apply(String, arguments);
+	str = str.replace(/{(.*?)}(.*?){}/g, (match, color, str) => {
+		return `<span style="color:${color}">${str}</span>`;
+	});
+	str = str.replace(/\n/g, "<br/>");
+	
+	let item = document.createElement("span");
+	item.innerHTML = `${str} `;
+	current.appendChild(item);
+	node.scrollTop = node.scrollHeight;
+}
+
+function pause() {
+	if (current && current.childNodes.length == 0) { return; }
+	current = document.createElement("p");
+	node.appendChild(current);
+	
+	while (node.childNodes.length > 50) { node.removeChild(node.firstChild); }
+}
+
+function init$2(n) {
+	node = n;
+	node.classList.remove("hidden");
+
+	window.addEventListener("resize", e => node.scrollTop = node.scrollHeight);
+	pause();
+}
+
+class Item extends Entity {
+	constructor(type, visual) {
+		super(visual);
+		this._type = type;
+	}
+
+	getType() { return this._type; }
+
+	pick(who) {
+		who.getLevel().setItem(who.getXY(), null);
+		add$1("You pick up %the.", this);
+	}
+}
+
+
+
+class Wearable extends Item {
+	pick(who) {
+		super.pick(who);
+
+		let other = who.inventory.getItemByType(this._type);
+		if (other) {
+			who.inventory.removeItem(other);
+			who.getLevel().setItem(who.getXY(), other);
+			add$1("You drop %the.", other);
+		}
+
+		who.inventory.addItem(this);
+	}
+}
+
+let node$1;
+
+function init$3(n) {
+	node$1 = n;
+	node$1.classList.remove("hidden");
+}
+
+function update() {
+	node$1.innerHTML = "You have:";
+
+	let ul = document.createElement("ul");
+	node$1.appendChild(ul);
+
+	ul.appendChild(buildStatus());
+	ul.appendChild(buildItems());
+}
+
+function buildStatus() {
+	// fixme colors?
+	let node = document.createElement("li");
+	let str = "100% health, 100% mana";
+
+	let gold = pc.inventory.getItemByType("gold");
+	let coins = (gold ? gold.amount : 0);
+	if (coins > 0) { 
+		let color = gold.getVisual().fg;
+		let suffix = (coins > 1 ? "s" : "");
+		str = `${str}, <span style="color:${color}">${coins}</span> ${gold.toString()}${suffix}`;
+	}
+
+	node.innerHTML = str;
+	return node;
+}
+
+function buildItems() {
+	let frag = document.createDocumentFragment();
+	let items = pc.inventory.getItems().filter(i => i.getType() != "gold");
+	items.forEach(item => {
+		let node = document.createElement("li");
+		node.innerHTML = item.toString();
+		frag.appendChild(node);
+	});
+	return frag;
+}
+
+
+var status = Object.freeze({
+	init: init$3,
+	update: update
+});
+
+class Inventory {
+	constructor() {
+		this._items = [];
+	}
+
+	getItems() {
+		return this._items;
+	}
+
+	getItemByType(type) {
+		return this._items.filter(i => i.getType() == type)[0];
+	}
+
+	removeItem(item) {
+		let index = this._items.indexOf(item);
+		if (index > -1) { this._items.splice(index, 1); }
+		update();
+		return this;
+	}
+
+	addItem(item) {
+		this._items.push(item);
+		update();
 		return this;
 	}
 }
@@ -339,36 +479,6 @@ function subscribe(message, subscriber) {
 	storage[message].push(subscriber);
 }
 
-let node;
-let current = null;
-
-function add$1() {
-	let str = String.format.apply(String, arguments);
-	str = str.replace(/{(.*?)}(.*?){}/g, (match, color, str) => {
-		return `<span style="color:${color}">${str}</span>`;
-	});
-	str = str.replace(/\n/g, "<br/>");
-	
-	let item = document.createElement("span");
-	item.innerHTML = `${str} `;
-	current.appendChild(item);
-	node.scrollTop = node.scrollHeight;
-}
-
-function pause() {
-	if (current && current.childNodes.length == 0) { return; }
-	current = document.createElement("p");
-	node.appendChild(current);
-	
-	while (node.childNodes.length > 50) { node.removeChild(node.firstChild); }
-}
-
-function init$1(n) {
-	node = n;
-	node.classList.remove("hidden");
-	pause();
-}
-
 class Floor extends Entity {
 	constructor() {
 		super({ch:".", fg:"#aaa", name:"stone floor"});
@@ -378,7 +488,7 @@ class Floor extends Entity {
 class Wall extends Entity {
 	constructor() {
 		super({ch:"#", fg:"#666", name:"solid wall"});
-		this._blocks = BLOCKS_LIGHT;
+		this.blocks = BLOCKS_LIGHT;
 	}
 }
 
@@ -402,17 +512,15 @@ class Door extends Entity {
 
 	isOpen() { return this._isOpen; }
 
-	blocks() {
-		return (this._isOpen ? BLOCKS_NONE : BLOCKS_LIGHT);
-	}
-
 	_close() {
+		this.blocks = BLOCKS_LIGHT;
 		this._visual.ch = "+";
 		this._isOpen = false;
 		this._visual.name = "closed door";
 	}
 
 	_open() {
+		this.blocks = BLOCKS_NONE;
 		this._visual.ch = "/";
 		this._isOpen = true;
 		this._visual.name = "open door";
@@ -496,15 +604,15 @@ class PC extends Being {
 	constructor() {
 		super({ch:"@", fg:"#fff", name:"you"});
 		this._resolve = null; // end turn
-		this._blocks = BLOCKS_NONE; // in order to see stuff via FOV...
-		this._fov = {};
+		this.blocks = BLOCKS_NONE; // in order to see stuff via FOV...
+		this.fov = {};
+		this.inventory = new Inventory();
 
 		subscribe("topology-change", this);
 	}
 
 	describeThe() { return this.toString(); }
 	describeA() { return this.toString(); }
-	getFOV() { return this._fov; }
 
 	getCombatOption() {
 		return ROT.RNG.getWeightedValue(COMBAT_OPTIONS);
@@ -549,8 +657,11 @@ class PC extends Being {
 
 		this._updateFOV();
 
+		// getEntity not possible, because *we* are standing here :)
+
 		let item = this._level.getItem(this._xy);
 		if (item) {
+			add$1("%A is lying here.", item);
 			return;
 		}
 
@@ -568,15 +679,12 @@ class PC extends Being {
 
 	_activate(xy) { // pick or enter
 		let item = this._level.getItem(xy);
-		if (item) {
-			// fixme pick
-			return;
-		}
+		if (item) { return item.pick(this); }
 
 		let cell = this._level.getCell(xy);
 		if (cell.activate) {
 			cell.activate(this);
-			this._resolve();
+			this._resolve(); // successful cell activation
 		} else {
 			add$1("There is nothing you can do here.");
 		}
@@ -592,7 +700,7 @@ class PC extends Being {
 				add$1("You open the door.");
 				entity.open();
 			}
-			return;
+			return this._resolve(); // successful interaction
 		}
 
 		add$1("You see %a.", entity);
@@ -601,20 +709,18 @@ class PC extends Being {
 			choice(["aaaa", "bbbb"]);
 			return;			
 		}
-/*
+
 		if (entity instanceof Item) {
-			log.add("To pick it up, move on its place and press {#fff}Enter{}.");
+			add$1("To pick it up, move there and press {#fff}Enter{}.");
 			return;
 		}
-*/
-		add$1("No interaction is possible.");
 	}
 
 	_move(xy) {
 		let entity = this._level.getEntity(xy);
-		if (entity.blocks() >= BLOCKS_MOVEMENT) {
+		if (entity.blocks >= BLOCKS_MOVEMENT) {
 			add$1("You bump into %a.", entity);
-			if (!TUTORIAL.door) {
+			if (entity instanceof Door && !TUTORIAL.door) {
 				TUTORIAL.door = true;
 				add$1("To interact with stuff, press both a {#fff}modifier key{} (Ctrl, Alt, Shift or Command) and a {#fff}direction key{} (used for movement).");
 			}
@@ -622,13 +728,13 @@ class PC extends Being {
 		}
 
 		this.moveTo(xy);
-		this._resolve();
+		this._resolve(); // successful movement
 	}
 
 	_updateFOV() {
 		let level = this._level;
 		let fov = new ROT.FOV.PreciseShadowcasting((x, y) => {
-			return level.getEntity(new XY(x, y)).blocks() < BLOCKS_LIGHT;
+			return level.getEntity(new XY(x, y)).blocks < BLOCKS_LIGHT;
 		});
 
 		let newFOV = {};
@@ -637,7 +743,7 @@ class PC extends Being {
 			newFOV[xy] = xy;
 		};
 		fov.compute(this._xy.x, this._xy.y, PC_SIGHT, cb);
-		this._fov = newFOV;
+		this.fov = newFOV;
 
 		publish("visibility-change", this, {xy:this._xy});
 	}
@@ -835,7 +941,7 @@ function draw(board, cursor, highlight = []) {
 	drawCursor(cursor);
 }
 
-function init$2(parent) {
+function init$4(parent) {
 	parent.appendChild(CTX.canvas);
 }
 
@@ -888,7 +994,7 @@ class Memory {
 			return entity.getVisual();
 		}
 
-		let fov = pc.getFOV();
+		let fov = pc.fov;
 		if (xy in fov) {
 			this._memoize(xy, this._level.getCell(xy).getVisual()); // memoize cell only
 			return this._level.getEntity(xy).getVisual();
@@ -950,7 +1056,7 @@ function fit() {
 	node.style.top = `${offset.y}px`;
 }
 
-function update(levelXY) {
+function update$1(levelXY) {
 	let visual = memory.visualAt(levelXY);
 	if (!visual) { return; }
 	let displayXY = levelToDisplay(levelXY);
@@ -964,7 +1070,7 @@ function setCenter(newCenter) {
 	let displayXY = new XY();
 	for (displayXY.x=0; displayXY.x<options.width; displayXY.x++) {
 		for (displayXY.y=0; displayXY.y<options.height; displayXY.y++) {
-			update(displayToLevel(displayXY));
+			update$1(displayToLevel(displayXY));
 		}
 	}
 }
@@ -1000,7 +1106,7 @@ function handleMessage(message, publisher, data) {
 
 		case "visual-change":
 			if (publisher != level) { return; }
-			update(data.xy);
+			update$1(data.xy);
 		break;
 	}
 }
@@ -1013,7 +1119,7 @@ function zoomOut() {
 	return zoom(FONT_BASE);
 }
 
-function init$3(parent) {
+function init$5(parent) {
 	parent.appendChild(display.getContainer());
 	subscribe("visual-change", handleMessage);
 	subscribe("visibility-change", handleMessage);
@@ -1116,8 +1222,8 @@ function drawFull() {
 	draw(board, cursor, highlight || []);
 }
 
-function init$$1(parent) {
-	init$2(parent);
+function init$1(parent) {
+	init$4(parent);
 	checkSegments();
 	drawFull();
 }
@@ -1161,8 +1267,8 @@ const WIDTH = 13;
 
 const TEST = new Array(11).join("\n");
 
-let node$2 = document.createElement("div");
-node$2.classList.add("tower");
+let node$3 = document.createElement("div");
+node$3.classList.add("tower");
 
 function mid() {
 	let content = "";
@@ -1224,9 +1330,9 @@ function colorize(ch, index, str) {
 }
 
 function fit$1() {
-	let avail = node$2.parentNode.offsetHeight;
-	node$2.innerHTML = TEST;
-	let rows = Math.floor(TEST.length*avail/node$2.offsetHeight) - 4;
+	let avail = node$3.parentNode.offsetHeight;
+	node$3.innerHTML = TEST;
+	let rows = Math.floor(TEST.length*avail/node$3.offsetHeight) - 4;
 
 	rows -= START.length;
 	rows -= END.length;
@@ -1237,16 +1343,16 @@ function fit$1() {
 	}
 	all = all.concat(END);
 
-	node$2.innerHTML = all.join("\n").replace(/\S/g, colorize);
+	node$3.innerHTML = all.join("\n").replace(/\S/g, colorize);
 }
 
 function getNode() {
-	return node$2;
+	return node$3;
 }
 
-let node$3 = document.createElement("div");
-node$3.classList.add("title");
-node$3.innerHTML =                                               
+let node$4 = document.createElement("div");
+node$4.classList.add("title");
+node$4.innerHTML =                                               
 ".oPYo. 8                       o             \n" +
 "8      8                                     \n" +
 "`Yooo. 8 .oPYo. .oPYo. .oPYo. o8 odYo. .oPYo.\n" +
@@ -1265,12 +1371,12 @@ node$3.innerHTML =
 "                                    ooP'     ";
 
 function getNode$1() {
-	return node$3;
+	return node$4;
 }
 
-let node$4 = document.createElement("div");
-node$4.classList.add("bottom");
-node$4.innerHTML = "BOTTOM";
+let node$5 = document.createElement("div");
+node$5.classList.add("bottom");
+node$5.innerHTML = "BOTTOM";
 
 const TEST$1 = "xxxxxxxxxx";
 const PAD = "  ";
@@ -1313,9 +1419,9 @@ function colorizeFlower(ch) {
 }
 
 function fit$2() {
-	let avail = node$4.parentNode.offsetWidth;
-	node$4.innerHTML = TEST$1;
-	let columns = Math.floor(TEST$1.length*avail/node$4.offsetWidth) - 2;
+	let avail = node$5.parentNode.offsetWidth;
+	node$5.innerHTML = TEST$1;
+	let columns = Math.floor(TEST$1.length*avail/node$5.offsetWidth) - 2;
 
 	let knight = KNIGHT.join("\n").replace(/\S/g, colorizeKnight).split("\n");
 	let flower = FLOWER.join("\n").replace(/\S/g, colorizeFlower).split("\n");
@@ -1334,23 +1440,23 @@ function fit$2() {
 	let final = `<span class='grass'>${new Array(columns+1).join("^")}</span>`;
 	result.push(final);
 
-	node$4.innerHTML = result.join("\n");
+	node$5.innerHTML = result.join("\n");
 
 }
 
 function getNode$2() {
-	return node$4;
+	return node$5;
 }
 
-let node$5 = document.createElement("div");
-node$5.classList.add("text");
-node$5.innerHTML = 
+let node$6 = document.createElement("div");
+node$6.classList.add("text");
+node$6.innerHTML = 
 `Into a profound slumber she sank, surrounded only by dense brambles, thorns and roses.
 Many advanturers tried to find and rescue her, but none came back...
 <br/><br/><span>Hit [Enter] to start the game</span>`;
 
 function getNode$3() {
-	return node$5;
+	return node$6;
 }
 
 const FACTS = [
@@ -1362,23 +1468,23 @@ const FACTS = [
 	"This game is best played with a maximized browser window"
 ];
 
-let node$6 = document.createElement("div");
-node$6.classList.add("funfact");
-node$6.innerHTML = `Fun Fact: ${FACTS.random()}`;
+let node$7 = document.createElement("div");
+node$7.classList.add("funfact");
+node$7.innerHTML = `Fun Fact: ${FACTS.random()}`;
 
 function getNode$4() {
-	return node$6;
+	return node$7;
 }
 
 let resolve$2 = null;
-let node$1 = null;
+let node$2 = null;
 
 function handleKeyEvent$2(e) {
 	if (!isEnter(e)) { return; }
 
 	pop();
 	window.removeEventListener("resize", onResize);
-	node$1.parentNode.removeChild(node$1);
+	node$2.parentNode.removeChild(node$2);
 
 	resolve$2();
 }
@@ -1389,12 +1495,12 @@ function onResize(e) {
 }
 
 function start$1(n) {
-	node$1 = n;
-	node$1.appendChild(getNode$1());
-	node$1.appendChild(getNode$2());
-	node$1.appendChild(getNode$3());
-	node$1.appendChild(getNode());
-	node$1.appendChild(getNode$4());
+	node$2 = n;
+	node$2.appendChild(getNode$1());
+	node$2.appendChild(getNode$2());
+	node$2.appendChild(getNode$3());
+	node$2.appendChild(getNode());
+	node$2.appendChild(getNode$4());
 
 	fit$1();
 	fit$2();
@@ -1598,7 +1704,7 @@ function wander(who) {
 
 	let dirs = DIRS.filter(dxy => {
 		let entity = level.getEntity(who.getXY().plus(dxy));
-		return entity.blocks() < BLOCKS_MOVEMENT;
+		return entity.blocks < BLOCKS_MOVEMENT;
 	});
 	
 	if (!dirs.length) { return result; }
@@ -1616,7 +1722,7 @@ function getCloserToPC(who) {
 	DIRS.forEach(dxy => {
 		let xy = who.getXY().plus(dxy);
 		let entity = who.getLevel().getEntity(xy);
-		if (entity.blocks() >= BLOCKS_MOVEMENT) { return; }
+		if (entity.blocks >= BLOCKS_MOVEMENT) { return; }
 		
 		let dist = xy.dist8(pc.getXY());
 		if (dist < best) {
@@ -1666,6 +1772,28 @@ class Rat extends Enemy {
 	}
 }
 
+window.ss = status;
+
+
+
+class Sword extends Wearable {
+	constructor() {
+		super("weapon", {ch:"(", fg:"#eef", name:"sword"});
+	}
+}
+
+class Axe extends Wearable {
+	constructor() {
+		super("weapon", {ch:"(", fg:"#eef", name:"axe"});
+	}
+}
+
+class Shield extends Wearable {
+	constructor() {
+		super("shield", {ch:")", fg:"#eef", name:"shield"});
+	}
+}
+
 const levels = {};
 
 function staircaseCallback(danger, start) {
@@ -1689,7 +1817,10 @@ function decorate(level) {
 	level.rooms.forEach(room => level.carveDoors(room));	
 
 	let rat = new Rat();
-	rat.moveTo(level.start.plus(new XY(3, 0)), level);
+//	rat.moveTo(level.start.plus(new XY(3, 0)), level);
+	level.setItem(level.start.plus(new XY(1, 0)), new Sword());
+	level.setItem(level.start.plus(new XY(2, 0)), new Axe());
+	level.setItem(level.start.plus(new XY(3, 0)), new Shield());
 
 	/* staircase up, always */
 	let up = new Staircase(true, staircaseCallback(level.danger+1, true));
@@ -1805,10 +1936,13 @@ let seed = Date.now();
 console.log("seed", seed);
 ROT.RNG.setSeed(seed);
 
-start$1(document.querySelector("#intro")).then(() => {
-	init$3(document.querySelector("#map"));
-	init$$1(document.querySelector("#combat"));
-	init$1(document.querySelector("#log"));
+function init$$1() {
+	init$5(document.querySelector("#map"));
+	init$1(document.querySelector("#combat"));
+	init$2(document.querySelector("#log"));
+	init$3(document.querySelector("#status"));
+
+	update();
 
 	let level = generate(1);
 	level.activate(level.start, pc);
@@ -1820,6 +1954,8 @@ start$1(document.querySelector("#intro")).then(() => {
 	add$1("To move around, use {#fff}arrow keys{}, {#fff}numpad{} or {#fff}vim-keys{}.");
 
 	loop();
-});
+}
+
+start$1(document.querySelector("#intro")).then(init$$1);
 
 }());

@@ -3,6 +3,7 @@ import * as combat from "combat/combat.js";
 import * as map from "ui/map/map.js";
 import * as intro from "ui/intro/intro.js";
 import * as log from "ui/log.js";
+import * as status from "ui/status.js";
 
 import * as actors from "util/actors.js";
 
@@ -13,10 +14,13 @@ let seed = Date.now();
 console.log("seed", seed);
 ROT.RNG.setSeed(seed);
 
-intro.start(document.querySelector("#intro")).then(() => {
+function init() {
 	map.init(document.querySelector("#map"));
 	combat.init(document.querySelector("#combat"));
 	log.init(document.querySelector("#log"));
+	status.init(document.querySelector("#status"));
+
+	status.update();
 
 	let level = generate(1);
 	level.activate(level.start, pc);
@@ -28,4 +32,6 @@ intro.start(document.querySelector("#intro")).then(() => {
 	log.add("To move around, use {#fff}arrow keys{}, {#fff}numpad{} or {#fff}vim-keys{}.");
 
 	actors.loop();
-});
+}
+
+intro.start(document.querySelector("#intro")).then(init);

@@ -25,5 +25,7 @@ export function pause() {
 export function init(n) {
 	node = n;
 	node.classList.remove("hidden");
+
+	window.addEventListener("resize", e => node.scrollTop = node.scrollHeight);
 	pause();
 }

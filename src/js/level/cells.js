@@ -11,7 +11,7 @@ export class Floor extends Entity {
 export class Wall extends Entity {
 	constructor() {
 		super({ch:"#", fg:"#666", name:"solid wall"});
-		this._blocks = BLOCKS_LIGHT;
+		this.blocks = BLOCKS_LIGHT;
 	}
 }
 
@@ -35,17 +35,15 @@ export class Door extends Entity {
 
 	isOpen() { return this._isOpen; }
 
-	blocks() {
-		return (this._isOpen ? BLOCKS_NONE : BLOCKS_LIGHT);
-	}
-
 	_close() {
+		this.blocks = BLOCKS_LIGHT;
 		this._visual.ch = "+";
 		this._isOpen = false;
 		this._visual.name = "closed door";
 	}
 
 	_open() {
+		this.blocks = BLOCKS_NONE;
 		this._visual.ch = "/";
 		this._isOpen = true;
 		this._visual.name = "open door";
