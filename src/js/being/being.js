@@ -22,7 +22,7 @@ export default class Being extends Entity {
 	}
 	
 	die() {
-		this._level.setBeing(this._xy, null);
+		this.moveTo(null);
 		actors.remove(this);
 		// fixme drop stuff?
 	}
@@ -41,7 +41,7 @@ export default class Being extends Entity {
 		this._level = level || this._level;
 		this._xy = xy;
 
-		this._level.setBeing(this._xy, this); // draw at new position
+		this._xy && this._level.setBeing(this._xy, this); // draw at new position
 		
 		return this;
 	}

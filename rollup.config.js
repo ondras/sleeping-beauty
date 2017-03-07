@@ -1,10 +1,12 @@
-import includePaths from "rollup-plugin-includepaths";
+"use strict";
 
-let includePathsOptions = {
+var includePaths = require("rollup-plugin-includepaths");
+
+var includePathsOptions = {
 	paths: ["src/js"]
 };
 
-export default {
+module.exports = {
     entry: "src/js/app.js",
     dest: "app.js",
     format: "iife",

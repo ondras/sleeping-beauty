@@ -4,9 +4,12 @@ import XY from "util/xy.js";
 import * as ui from "ui/combat.js";
 import * as keyboard from "util/keyboard.js";
 import * as map from "ui/map/map.js";
+import * as log from "ui/log.js";
 
 import pc from "being/pc.js";
 import { ATTACK_1, ATTACK_2, MAGIC_1, MAGIC_2 } from "conf.js";
+
+let tutorial = false;
 
 let board = new Board().randomize();
 let resolve = null;
@@ -94,6 +97,13 @@ export function start(e) {
 	map.deactivate();
 	map.zoomIn();
 	ui.activate();
+
+	if (!tutorial) {
+		tutorial = true;
+		log.add("Combat in Sleeping Beauty happens by playing the {goldenrod}Game of Thorns{} on a square game board.");
+		log.add("Match sequences of colored blocks to perform individual actions. This includes both your attacks as well as your enemy's.");
+		log.add("Note that certain items in your inventory can modify the frequency of colors on the game boad.");
+	}
 
 	enemy = e;
 	let promise = new Promise(r => resolve = r);

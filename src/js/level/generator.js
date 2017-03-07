@@ -1,7 +1,7 @@
 import XY from "util/xy.js";
 import Level from "./level.js";
-import * as room from "./room.js";
 import decorate from "./decorator.js";
+import * as room from "./room.js";
 
 function connectHorizontal(level, room1, room2) {
 	let min = Math.max(room1.lt.x, room2.lt.x);

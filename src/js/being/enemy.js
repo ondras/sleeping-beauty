@@ -13,6 +13,6 @@ class Enemy extends Being {
 
 export class Rat extends Enemy {
 	constructor() {
-		super({ch:"r", fg:"gray"});
+		super({ch:"r", fg:"gray", name:"rat"});
 	}
 }

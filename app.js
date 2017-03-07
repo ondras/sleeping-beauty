@@ -86,20 +86,63 @@ class XY {
 	}
 }
 
-const storage = Object.create(null);
+const SPEED = 10; // cells per second
 
-function publish(message, publisher, data) {
-	let subscribers = storage[message] || [];
-	subscribers.forEach(subscriber => {
-		typeof(subscriber) == "function"
-			? subscriber(message, publisher, data)
-			: subscriber.handleMessage(message, publisher, data);
-	});
-}
+class Animation {
+	constructor() {
+		this._items = [];
+		this._ts = null;
+		this._resolve = null;
+	}
 
-function subscribe(message, subscriber) {
-	if (!(message in storage)) { storage[message] = []; }
-	storage[message].push(subscriber);
+	add(item) {
+		this._items.push(item);
+		item.cell.animated = item.from;
+	}
+
+	start(drawCallback) {
+		let promise = new Promise(resolve => this._resolve = resolve);
+		this._drawCallback = drawCallback;
+		this._ts = Date.now();
+		this._step();
+		return promise;
+	}
+
+	_step() {
+		let time = Date.now() - this._ts;
+
+		let i = this._items.length;
+		while (i --> 0) { /* down so we can splice */
+			let item = this._items[i];
+			let finished = this._stepItem(item, time);
+			if (finished) { 
+				this._items.splice(i, 1);
+				item.cell.animated = null;
+			}
+		}
+
+		this._drawCallback();
+		if (this._items.length > 0) { 
+			requestAnimationFrame(() => this._step());
+		} else {
+			this._resolve();
+		}
+	}
+
+	_stepItem(item, time) {
+		let dist = item.from.dist8(item.to);
+
+		let frac = (time/1000) * SPEED / dist;
+		let finished = false;
+		if (frac >= 1) {
+			finished = true;
+			frac = 1;
+		}
+
+		item.cell.animated = item.from.lerp(item.to, frac);
+
+		return finished;
+	}
 }
 
 const BLOCKS_NONE = 0;
@@ -114,56 +157,23 @@ class Entity {
 
 	getVisual() { return this._visual; }
 	blocks() { return this._blocks; }
-	toString() { return this._visual.ch; }
-}
 
-class Floor extends Entity {
-	constructor() {
-		super({ch:".", fg:"#aaa"});
+	toString() { return this._visual.name; }
+	describeThe() { return `the ${this}`; }
+	describeA() {
+		let first = this._visual.name.charAt(0);
+		let article = (first.match(/[aeiou]/i) ? "an" : "a");
+		return `${article} ${this}`;
 	}
 }
 
-class Wall extends Entity {
-	constructor() {
-		super({ch:"#", fg:"#666"});
-		this._blocks = BLOCKS_LIGHT;
-	}
-}
+String.format.map.the = "describeThe";
+String.format.map.a = "describeA";
 
-class Grass extends Entity {
-	constructor(ch) {
-		super({ch, fg:"#693"});
-	}
-}
-
-class Tree extends Entity {
-	constructor() {
-		super({ch:"T", fg:"green"});
-	}
-}
-
-class Door extends Entity {
-	constructor() {
-		super({ch:"/", fg:"#963"});
-		ROT.RNG.getUniform() > 0.5 ? this.open() : this.close();
-	}
-
-	isOpen() { return this._open; }
-
-	blocks() {
-		return (this._open ? BLOCKS_NONE : BLOCKS_LIGHT);
-	}
-
-	close() {
-		this._visual.ch = "+";
-		this._open = false;
-	}
-
-	open() {
-		this._visual.ch = "/";
-		this._open = true;
-	}
-}
+// being-specific
+String.format.map.he = "describeHe";
+String.format.map.his = "describeHis";
+String.format.map.him = "describeHim";
 
 let queue = [];
 
@@ -206,7 +216,7 @@ class Being extends Entity {
 	}
 	
 	die() {
-		this._level.setBeing(this._xy, null);
+		this.moveTo(null);
 		remove(this);
 		// fixme drop stuff?
 	}
@@ -225,7 +235,7 @@ class Being extends Entity {
 		this._level = level || this._level;
 		this._xy = xy;
 
-		this._level.setBeing(this._xy, this); // draw at new position
+		this._xy && this._level.setBeing(this._xy, this); // draw at new position
 		
 		return this;
 	}
@@ -303,6 +313,121 @@ const AI_RANGE = 7;
 const AI_IDLE = .5;
 const PC_SIGHT = 8;
 
+const storage = Object.create(null);
+
+function publish(message, publisher, data) {
+	let subscribers = storage[message] || [];
+	subscribers.forEach(subscriber => {
+		typeof(subscriber) == "function"
+			? subscriber(message, publisher, data)
+			: subscriber.handleMessage(message, publisher, data);
+	});
+}
+
+function subscribe(message, subscriber) {
+	if (!(message in storage)) { storage[message] = []; }
+	storage[message].push(subscriber);
+}
+
+let node;
+let current = null;
+
+function add$1() {
+	let str = String.format.apply(String, arguments);
+	str = str.replace(/{(.*?)}(.*?){}/g, (match, color, str) => {
+		return `<span style="color:${color}">${str}</span>`;
+	});
+	
+	let item = document.createElement("span");
+	item.innerHTML = `${str} `;
+	current.appendChild(item);
+	node.scrollTop = node.scrollHeight;
+}
+
+function pause() {
+	if (current && current.childNodes.length == 0) { return; }
+	current = document.createElement("p");
+	node.appendChild(current);
+	
+	while (node.childNodes.length > 50) { node.removeChild(node.firstChild); }
+}
+
+function init$1(n) {
+	node = n;
+	node.classList.remove("hidden");
+	pause();
+}
+
+class Floor extends Entity {
+	constructor() {
+		super({ch:".", fg:"#aaa", name:"stone floor"});
+	}
+}
+
+class Wall extends Entity {
+	constructor() {
+		super({ch:"#", fg:"#666", name:"solid wall"});
+		this._blocks = BLOCKS_LIGHT;
+	}
+}
+
+class Grass extends Entity {
+	constructor(ch) {
+		super({ch, fg:"#693"});
+	}
+}
+
+class Tree extends Entity {
+	constructor() {
+		super({ch:"T", fg:"green"});
+	}
+}
+
+class Door extends Entity {
+	constructor() {
+		super({ch:"/", fg:"#963"});
+		ROT.RNG.getUniform() > 0.5 ? this.open() : this.close();
+	}
+
+	isOpen() { return this._open; }
+
+	blocks() {
+		return (this._open ? BLOCKS_NONE : BLOCKS_LIGHT);
+	}
+
+	close() {
+		this._visual.ch = "+";
+		this._open = false;
+		this._visual.name = "closed door";
+	}
+
+	open() {
+		this._visual.ch = "/";
+		this._open = true;
+		this._visual.name = "open door";
+	}
+}
+
+class Staircase extends Entity {
+	constructor(up, callback) {
+		let ch = (up ? "<" : ">");
+		let fg = "#aaa";
+		let name = `staircase leading ${up ? "up" : "down"}`;
+		super({ch, fg, name});
+
+		this._callback = callback;
+	}
+
+	activate(who) {
+		add$1("You enter the staircase...");
+		this._callback(who);
+	}
+}
+
+const ROOM = new Floor();
+const CORRIDOR = new Floor();
+const WALL = new Wall();
+
 let COMBAT_OPTIONS = {
 	[ATTACK_1]: 10,
 	[ATTACK_2]: 10,
@@ -310,14 +435,23 @@ let COMBAT_OPTIONS = {
 	[MAGIC_2]: 10
 };
 
+const TUTORIAL = {
+	staircase: false,
+	pick: false,
+	door: false,
+	enemy: false
+};
+
 class PC extends Being {
 	constructor() {
-		super({ch:"@", fg:"#fff"});
+		super({ch:"@", fg:"#fff", name:"you"});
 		this._resolve = null; // end turn
 		this._blocks = BLOCKS_NONE; // in order to see stuff via FOV...
 		this._fov = {};
 	}
 
+	describeThe() { return this.toString(); }
+	describeA() { return this.toString(); }
 	getFOV() { return this._fov; }
 
 	getCombatOption() {
@@ -325,7 +459,7 @@ class PC extends Being {
 	}
 
 	act() {
-		console.log("player act");
+		pause();
 		let promise = new Promise(resolve => this._resolve = resolve);
 
 		promise = promise.then(() => pop());
@@ -335,21 +469,57 @@ class PC extends Being {
 	}
 
 	handleKeyEvent(e) {
+		if (isEnter(e)) { return this._activate(this._xy); }
+
 		let dir = getDirection(e);
+		if (!dir) { return; }
+
 		let modifier = hasModifier(e);
-		if (dir) {
-			let xy = this._xy.plus(dir);
-			if (modifier) {
-				this._interact(xy);
-			} else {
-				this._move(xy);
-			}
+		let xy = this._xy.plus(dir);
+		if (modifier) {
+			this._interact(xy);
+		} else {
+			this._move(xy);
 		}
 	}
 
 	moveTo(xy, level) {
 		super.moveTo(xy, level);
+		if (!this._xy) { return; }
+
 		this._updateFOV();
+
+		let item = this._level.getItem(this._xy);
+		if (item) {
+			return;
+		}
+
+		let cell = this._level.getCell(this._xy);
+		if (cell instanceof Door) {
+			add$1("You pass through %a.", cell);
+		} else if (cell instanceof Staircase) {
+			add$1("%A is here.", cell);
+			if (!TUTORIAL.staircase) {
+				TUTORIAL.staircase = true;
+				add$1("To use the staircase, press {#fff}Enter{}.");
+			}
+		}
+	}
+
+	_activate(xy) { // pick or enter
+		let item = this._level.getItem(xy);
+		if (item) {
+			// fixme pick
+			return;
+		}
+
+		let cell = this._level.getCell(xy);
+		if (cell.activate) {
+			cell.activate(this);
+			this._resolve();
+		} else {
+			add$1("There is nothing you can do here.");
+		}
 	}
 
 	_interact(xy) {
@@ -361,9 +531,14 @@ class PC extends Being {
 	_move(xy) {
 		let entity = this._level.getEntity(xy);
 		if (entity.blocks() >= BLOCKS_MOVEMENT) {
-			// fixme log
+			add$1("You bump into %a.", entity);
+			if (!TUTORIAL.door) {
+				TUTORIAL.door = true;
+				add$1("To interact with stuff, press both a {#fff}modifier key{} (Ctrl, Alt, Shift or Command) and a {#fff}direction key{} (used for movement).");
+			}
 			return;
 		}
+
 		this.moveTo(xy);
 		this._resolve();
 	}
@@ -387,248 +562,6 @@ class PC extends Being {
 }
 
 var pc = new PC();
-
-const GRASS_1 = new Grass("\"");
-const GRASS_2 = new Grass("'");
-const TREE = new Tree();
-
-const NOISE = new ROT.Noise.Simplex();
-
-function darken(color) {
-	if (!color) { return color; }
-	return ROT.Color.toRGB(ROT.Color.fromString(color).map(x => x>>1));
-}
-
-class Memory {
-	constructor(level) {
-		this._level = level;
-		this._memoized = {};
-	}
-
-	visualAt(xy) {
-		if (this._level.isOutside(xy)) {
-			let entity;
-			let noise = NOISE.get(xy.x/20, xy.y/20);
-			if (noise < 0) {
-				entity = GRASS_1;
-			} else if (noise < 0.8) {
-				entity = GRASS_2;
-			} else {
-				entity = TREE;
-			}
-			return entity.getVisual();
-		}
-
-		let fov = pc.getFOV();
-		if (xy in fov) {
-			let visual = this._level.getEntity(xy).getVisual();
-			this._memoize(xy, visual);
-			return visual;
-		} else if (xy in this._memoized) {
-			return this._memoized[xy];
-		} else {
-			return null;
-		}
-	}
-
-	_memoize(xy, visual) {
-		this._memoized[xy] = {
-			ch: visual.ch,
-			fg: darken(visual.fg)
-		};
-	}
-}
-
-const FONT_BASE = 18;
-const FONT_ZOOM = 150;
-const ZOOM_TIME = 1500;
-
-let level$1 = null;
-let options = {
-	width: 1,
-	height: 1,
-	fontSize: FONT_BASE,
-	fontFamily: "metrickal, monospace"
-};
-let display = new ROT.Display(options);
-let center = new XY(0, 0); // level coords in the middle of the map
-let memory = null;
-let memories = {};
-
-
-function levelToDisplay(xy) { // level XY to display XY; center = middle point
-	let half = new XY(options.width, options.height).scale(0.5).floor();
-	return xy.minus(center).plus(half);
-}
-
-function displayToLevel(xy) { // display XY to level XY; middle point = center
-	let half = new XY(options.width, options.height).scale(0.5).floor();
-	return xy.minus(half).plus(center);
-}
-
-function fit() {
-	let node = display.getContainer();
-	let parent = node.parentNode;
-	let avail = new XY(parent.offsetWidth, parent.offsetHeight);
-
-	let size = display.computeSize(avail.x, avail.y);
-	size[0] += (size[0] % 2 ? 2 : 1);
-	size[1] += (size[1] % 2 ? 2 : 1);
-	options.width = size[0];
-	options.height = size[1];
-	display.setOptions(options);
-
-	let current = new XY(node.offsetWidth, node.offsetHeight);
-	let offset = avail.minus(current).scale(0.5);
-	node.style.left = `${offset.x}px`;
-	node.style.top = `${offset.y}px`;
-}
-
-function update(levelXY) {
-	let visual = memory.visualAt(levelXY);
-	if (!visual) { return; }
-	let displayXY = levelToDisplay(levelXY);
-	display.draw(displayXY.x, displayXY.y, visual.ch, visual.fg);
-}
-
-function setCenter(newCenter) {
-	center = newCenter.clone();
-	display.clear();
-
-	let displayXY = new XY();
-	for (displayXY.x=0; displayXY.x<options.width; displayXY.x++) {
-		for (displayXY.y=0; displayXY.y<options.height; displayXY.y++) {
-			update(displayToLevel(displayXY));
-		}
-	}
-}
-
-function setLevel(l) {
-	level$1 = l;
-
-	if (!(level$1.id in memories)) {
-		memories[level$1.id] = new Memory(level$1);
-	}
-	memory = memories[level$1.id];
-
-	setCenter(center);
-}
-
-function zoom(size2) {
-	let node = display.getContainer();
-	node.style.transition = `transform ${ZOOM_TIME}ms`;
-
-	let size1 = options.fontSize;
-	let scale = size2/size1;
-
-	node.style.transform = `scale(${scale})`;
-	setTimeout(() => {
-		options.fontSize = size2;
-		display.setOptions(options);
-		fit();
-		setCenter(center);
-		node.style.transition = "";
-		node.style.transform = "";
-	}, ZOOM_TIME);
-}
-
-function handleMessage(message, publisher, data) {
-	switch (message) {
-		case "visibility-change":
-			setCenter(data.xy);
-		break;
-
-		case "visual-change":
-			if (publisher != level$1) { return; }
-			update(data.xy);
-		break;
-	}
-}
-
-function zoomIn() {
-	return zoom(FONT_ZOOM);
-}
-
-function zoomOut() {
-	return zoom(FONT_BASE);
-}
-
-function init(parent) {
-	parent.appendChild(display.getContainer());
-	fit();
-	subscribe("visual-change", handleMessage);
-	subscribe("visibility-change", handleMessage);
-}
-
-function activate() {
-	let node = display.getContainer().parentNode;
-	node.classList.remove("hidden");
-	node.classList.remove("inactive");
-}
-
-function deactivate() {
-	let node = display.getContainer().parentNode;
-	node.classList.add("inactive");
-}
-
-const SPEED = 10; // cells per second
-
-class Animation {
-	constructor() {
-		this._items = [];
-		this._ts = null;
-		this._resolve = null;
-	}
-
-	add(item) {
-		this._items.push(item);
-		item.cell.animated = item.from;
-	}
-
-	start(drawCallback) {
-		let promise = new Promise(resolve => this._resolve = resolve);
-		this._drawCallback = drawCallback;
-		this._ts = Date.now();
-		this._step();
-		return promise;
-	}
-
-	_step() {
-		let time = Date.now() - this._ts;
-
-		let i = this._items.length;
-		while (i --> 0) { /* down so we can splice */
-			let item = this._items[i];
-			let finished = this._stepItem(item, time);
-			if (finished) { 
-				this._items.splice(i, 1);
-				item.cell.animated = null;
-			}
-		}
-
-		this._drawCallback();
-		if (this._items.length > 0) { 
-			requestAnimationFrame(() => this._step());
-		} else {
-			this._resolve();
-		}
-	}
-
-	_stepItem(item, time) {
-		let dist = item.from.dist8(item.to);
-
-		let frac = (time/1000) * SPEED / dist;
-		let finished = false;
-		if (frac >= 1) {
-			finished = true;
-			frac = 1;
-		}
-
-		item.cell.animated = item.from.lerp(item.to, frac);
-
-		return finished;
-	}
-}
 
 const W = 6;
 const H = W;
@@ -824,16 +757,206 @@ function init$2(parent) {
 	parent.appendChild(CTX.canvas);
 }
 
-function activate$2() {
+function activate$1() {
 	let node = CTX.canvas.parentNode;
 	node.classList.remove("hidden");
 	node.classList.remove("inactive");
 }
 
-function deactivate$1() {
+function deactivate() {
 	let node = CTX.canvas.parentNode;
 	node.classList.add("inactive");
 }
+
+const GRASS_1 = new Grass("\"");
+const GRASS_2 = new Grass("'");
+const TREE = new Tree();
+
+const NOISE = new ROT.Noise.Simplex();
+
+const memories = {};
+
+function darken(color) {
+	if (!color) { return color; }
+	return ROT.Color.toRGB(ROT.Color.fromString(color).map(x => x>>1));
+}
+
+class Memory {
+	static forLevel(level) {
+		if (!(level.id in memories)) { memories[level.id] = new this(level); }
+		return memories[level.id];
+	}
+
+	constructor(level) {
+		this._level = level;
+		this._memoized = {};
+	}
+
+	visualAt(xy) {
+		if (this._level.isOutside(xy)) {
+			let entity;
+			let noise = NOISE.get(xy.x/20, xy.y/20);
+			if (noise < 0) {
+				entity = GRASS_1;
+			} else if (noise < 0.8) {
+				entity = GRASS_2;
+			} else {
+				entity = TREE;
+			}
+			return entity.getVisual();
+		}
+
+		let fov = pc.getFOV();
+		if (xy in fov) {
+			this._memoize(xy, this._level.getCell(xy).getVisual()); // memoize cell only
+			return this._level.getEntity(xy).getVisual();
+		} else if (xy in this._memoized) {
+			return this._memoized[xy];
+		} else {
+			return null;
+		}
+	}
+
+	_memoize(xy, visual) {
+		this._memoized[xy] = {
+			ch: visual.ch,
+			fg: darken(visual.fg)
+		};
+	}
+}
+
+const FONT_BASE = 18;
+const FONT_ZOOM = 150;
+const ZOOM_TIME = 1500;
+
+let level = null;
+let options = {
+	width: 1,
+	height: 1,
+	fontSize: FONT_BASE,
+	fontFamily: "metrickal, monospace"
+};
+let display = new ROT.Display(options);
+let center = new XY(0, 0); // level coords in the middle of the map
+let memory = null;
+
+function levelToDisplay(xy) { // level XY to display XY; center = middle point
+	let half = new XY(options.width, options.height).scale(0.5).floor();
+	return xy.minus(center).plus(half);
+}
+
+function displayToLevel(xy) { // display XY to level XY; middle point = center
+	let half = new XY(options.width, options.height).scale(0.5).floor();
+	return xy.minus(half).plus(center);
+}
+
+function fit() {
+	let node = display.getContainer();
+	let parent = node.parentNode;
+	let avail = new XY(parent.offsetWidth, parent.offsetHeight);
+
+	let size = display.computeSize(avail.x, avail.y);
+	size[0] += (size[0] % 2 ? 2 : 1);
+	size[1] += (size[1] % 2 ? 2 : 1);
+	options.width = size[0];
+	options.height = size[1];
+	display.setOptions(options);
+
+	let current = new XY(node.offsetWidth, node.offsetHeight);
+	let offset = avail.minus(current).scale(0.5);
+	node.style.left = `${offset.x}px`;
+	node.style.top = `${offset.y}px`;
+}
+
+function update(levelXY) {
+	let visual = memory.visualAt(levelXY);
+	if (!visual) { return; }
+	let displayXY = levelToDisplay(levelXY);
+	display.draw(displayXY.x, displayXY.y, visual.ch, visual.fg);
+}
+
+function setCenter(newCenter) {
+	center = newCenter.clone();
+	display.clear();
+
+	let displayXY = new XY();
+	for (displayXY.x=0; displayXY.x<options.width; displayXY.x++) {
+		for (displayXY.y=0; displayXY.y<options.height; displayXY.y++) {
+			update(displayToLevel(displayXY));
+		}
+	}
+}
+
+function setLevel(l) {
+	level = l;
+	memory = Memory.forLevel(level);
+}
+
+function zoom(size2) {
+	let node = display.getContainer();
+	node.style.transition = `transform ${ZOOM_TIME}ms`;
+
+	let size1 = options.fontSize;
+	let scale = size2/size1;
+
+	node.style.transform = `scale(${scale})`;
+	setTimeout(() => {
+		options.fontSize = size2;
+		display.setOptions(options);
+		fit();
+		setCenter(center);
+		node.style.transition = "";
+		node.style.transform = "";
+	}, ZOOM_TIME);
+}
+
+function handleMessage(message, publisher, data) {
+	switch (message) {
+		case "visibility-change":
+			setCenter(data.xy);
+		break;
+
+		case "visual-change":
+			if (publisher != level) { return; }
+			update(data.xy);
+		break;
+	}
+}
+
+function zoomIn() {
+	return zoom(FONT_ZOOM);
+}
+
+function zoomOut() {
+	return zoom(FONT_BASE);
+}
+
+function init$3(parent) {
+	parent.appendChild(display.getContainer());
+	subscribe("visual-change", handleMessage);
+	subscribe("visibility-change", handleMessage);
+
+	window.addEventListener("resize", e => {
+		fit();
+		setCenter(center);
+	});
+
+	fit();
+	activate$2();
+}
+
+function activate$2() {
+	let node = display.getContainer().parentNode;
+	node.classList.remove("hidden");
+	node.classList.remove("inactive");
+}
+
+function deactivate$1() {
+	let node = display.getContainer().parentNode;
+	node.classList.add("inactive");
+}
+
+let tutorial = false;
 
 let board = new Board().randomize();
 let resolve = null;
@@ -841,9 +964,9 @@ let enemy = null;
 let cursor = new XY(0, 0);
 
 function end() {
-	activate();
+	activate$2();
 	zoomOut();
-	deactivate$1();
+	deactivate();
 	pop();
 	resolve();
 }
@@ -854,7 +977,7 @@ function doDamage(attacker, defender, options = {}) {
 	if (!defender.isAlive()) { end(); }
 }
 
-function activate$1(xy) {
+function activate$$1(xy) {
 	let segment = board.findSegment(xy);
 	if (!segment || segment.length < 2) { return; }
 
@@ -891,7 +1014,7 @@ function checkSegments() {
 }
 
 function handleKeyEvent(e) {
-	if (isEnter(e)) { return activate$1(cursor); }
+	if (isEnter(e)) { return activate$$1(cursor); }
 
 	let dir = getDirection(e);
 	if (!dir) { return; }
@@ -911,16 +1034,23 @@ function drawFull() {
 	draw(board, cursor, highlight || []);
 }
 
-function init$1(parent) {
+function init$$1(parent) {
 	init$2(parent);
 	checkSegments();
 	drawFull();
 }
 
 function start(e) {
-	deactivate();
+	deactivate$1();
 	zoomIn();
-	activate$2();
+	activate$1();
+
+	if (!tutorial) {
+		tutorial = true;
+		add$1("Combat in Sleeping Beauty happens by playing the {goldenrod}Game of Thorns{} on a square game board.");
+		add$1("Match sequences of colored blocks to perform individual actions. This includes both your attacks as well as your enemy's.");
+		add$1("Note that certain items in your inventory can modify the frequency of colors on the game boad.");
+	}
 
 	enemy = e;
 	let promise = new Promise(r => resolve = r);
@@ -949,8 +1079,8 @@ const WIDTH = 13;
 
 const TEST = new Array(11).join("\n");
 
-let node$1 = document.createElement("div");
-node$1.classList.add("tower");
+let node$2 = document.createElement("div");
+node$2.classList.add("tower");
 
 function mid() {
 	let content = "";
@@ -1012,9 +1142,9 @@ function colorize(ch, index, str) {
 }
 
 function fit$1() {
-	let avail = node$1.parentNode.offsetHeight;
-	node$1.innerHTML = TEST;
-	let rows = Math.floor(TEST.length*avail/node$1.offsetHeight) - 4;
+	let avail = node$2.parentNode.offsetHeight;
+	node$2.innerHTML = TEST;
+	let rows = Math.floor(TEST.length*avail/node$2.offsetHeight) - 4;
 
 	rows -= START.length;
 	rows -= END.length;
@@ -1025,16 +1155,16 @@ function fit$1() {
 	}
 	all = all.concat(END);
 
-	node$1.innerHTML = all.join("\n").replace(/\S/g, colorize);
+	node$2.innerHTML = all.join("\n").replace(/\S/g, colorize);
 }
 
 function getNode() {
-	return node$1;
+	return node$2;
 }
 
-let node$2 = document.createElement("div");
-node$2.classList.add("title");
-node$2.innerHTML =                                               
+let node$3 = document.createElement("div");
+node$3.classList.add("title");
+node$3.innerHTML =                                               
 ".oPYo. 8                       o             \n" +
 "8      8                                     \n" +
 "`Yooo. 8 .oPYo. .oPYo. .oPYo. o8 odYo. .oPYo.\n" +
@@ -1053,12 +1183,12 @@ node$2.innerHTML =
 "                                    ooP'     ";
 
 function getNode$1() {
-	return node$2;
+	return node$3;
 }
 
-let node$3 = document.createElement("div");
-node$3.classList.add("bottom");
-node$3.innerHTML = "BOTTOM";
+let node$4 = document.createElement("div");
+node$4.classList.add("bottom");
+node$4.innerHTML = "BOTTOM";
 
 const TEST$1 = "xxxxxxxxxx";
 const PAD = "  ";
@@ -1101,9 +1231,9 @@ function colorizeFlower(ch) {
 }
 
 function fit$2() {
-	let avail = node$3.parentNode.offsetWidth;
-	node$3.innerHTML = TEST$1;
-	let columns = Math.floor(TEST$1.length*avail/node$3.offsetWidth) - 2;
+	let avail = node$4.parentNode.offsetWidth;
+	node$4.innerHTML = TEST$1;
+	let columns = Math.floor(TEST$1.length*avail/node$4.offsetWidth) - 2;
 
 	let knight = KNIGHT.join("\n").replace(/\S/g, colorizeKnight).split("\n");
 	let flower = FLOWER.join("\n").replace(/\S/g, colorizeFlower).split("\n");
@@ -1122,23 +1252,23 @@ function fit$2() {
 	let final = `<span class='grass'>${new Array(columns+1).join("^")}</span>`;
 	result.push(final);
 
-	node$3.innerHTML = result.join("\n");
+	node$4.innerHTML = result.join("\n");
 
 }
 
 function getNode$2() {
-	return node$3;
+	return node$4;
 }
 
-let node$4 = document.createElement("div");
-node$4.classList.add("text");
-node$4.innerHTML = 
+let node$5 = document.createElement("div");
+node$5.classList.add("text");
+node$5.innerHTML = 
 `Into a profound slumber she sank, surrounded only by dense brambles, thorns and roses.
-Many advantureres tried to find and rescue her, but none came back...
+Many advanturers tried to find and rescue her, but none came back...
 <br/><br/><span>Hit [Enter] to start the game</span>`;
 
 function getNode$3() {
-	return node$4;
+	return node$5;
 }
 
 const FACTS = [
@@ -1150,23 +1280,23 @@ const FACTS = [
 	"This game is best played with a maximized browser window"
 ];
 
-let node$5 = document.createElement("div");
-node$5.classList.add("funfact");
-node$5.innerHTML = `Fun Fact: ${FACTS.random()}`;
+let node$6 = document.createElement("div");
+node$6.classList.add("funfact");
+node$6.innerHTML = `Fun Fact: ${FACTS.random()}`;
 
 function getNode$4() {
-	return node$5;
+	return node$6;
 }
 
 let resolve$1 = null;
-let node = null;
+let node$1 = null;
 
 function handleKeyEvent$1(e) {
 	if (!isEnter(e)) { return; }
 
 	pop();
 	window.removeEventListener("resize", onResize);
-	node.parentNode.removeChild(node);
+	node$1.parentNode.removeChild(node$1);
 
 	resolve$1();
 }
@@ -1177,12 +1307,12 @@ function onResize(e) {
 }
 
 function start$1(n) {
-	node = n;
-	node.appendChild(getNode$1());
-	node.appendChild(getNode$2());
-	node.appendChild(getNode$3());
-	node.appendChild(getNode());
-	node.appendChild(getNode$4());
+	node$1 = n;
+	node$1.appendChild(getNode$1());
+	node$1.appendChild(getNode$2());
+	node$1.appendChild(getNode$3());
+	node$1.appendChild(getNode());
+	node$1.appendChild(getNode$4());
 
 	fit$1();
 	fit$2();
@@ -1192,10 +1322,6 @@ function start$1(n) {
 
 	return new Promise(r => resolve$1 = r);
 }
-
-const ROOM = new Floor();
-const CORRIDOR = new Floor();
-const WALL = new Wall();
 
 function dangerToRadius(danger) {
 	return 30; // fixme
@@ -1209,6 +1335,17 @@ class Level {
 		this._beings = {};
 		this._items = {};
 		this._cells = {};
+	}
+
+	activate(xy, who) {
+		clear();
+
+		who.moveTo(null); // remove from old
+		setLevel(this);
+		who.moveTo(xy, this); // put to new
+
+		let beings = Object.keys(this._beings).map(key => this._beings[key]).filter(b => b); /* filter because of empty values */
+		beings.forEach(being => add(being));
 	}
 
 	isInside(xy) {
@@ -1247,20 +1384,19 @@ class Level {
 	}
 
 	setCell(xy, cell) {
-		this._cells[xy.toString()] = cell;
+		this._cells[xy] = cell;
 	}
 
+	getCell(xy) { return this._cells[xy] || WALL; }
+	getItem(xy) { return this._items[xy]; }
+
 	setBeing(xy, being) {
-		this._beings[xy.toString()] = being;
+		this._beings[xy] = being;
 		publish("visual-change", this, {xy});
 	}
 
-	getBeings() {
-		return Object.keys(this._beings).map(key => this._beings[key]);
-	}
-
 	setItem(xy, item) {
-		this._items[xy.toString()] = item;
+		this._items[xy] = item;
 		publish("visual-change", this, {xy});
 	}
 
@@ -1419,7 +1555,7 @@ function getCloserToPC(who) {
 function attack(who) {
 	let dist = who.getXY().dist8(pc.getXY());
 	if (dist == 1) {
-		// fixme log
+		add$1("%A attacks you!", who);
 		return start(who);
 	} else if (dist <= AI_RANGE) {
 		return getCloserToPC(who);
@@ -1444,22 +1580,45 @@ class Enemy extends Being {
 
 class Rat extends Enemy {
 	constructor() {
-		super({ch:"r", fg:"gray"});
+		super({ch:"r", fg:"gray", name:"rat"});
+	}
+}
+
+const levels = {};
+
+function staircaseCallback(danger, start) {
+	return function(who) {
+		if (!(danger in levels)) { generate(danger); } /* create another level */
+		let level = levels[danger];
+		level.activate(start ? level.start : level.end, who);
 	}
 }
 
 function decorate(level) {
+	levels[level.danger] = level;
+
 	let r1 = furthestRoom(level.rooms, level.rooms[0]);
 	let r2 = furthestRoom(level.rooms, r1);
 
 	level.start = r1.center;
 	level.end = r2.center;
+//	level.end = level.start.plus({x:1, y:0});
 
 	level.rooms.forEach(room => level.carveDoors(room));	
 
 	let rat = new Rat();
 	rat.moveTo(level.start.plus(new XY(3, 0)), level);
 
+	/* staircase up, always */
+	let up = new Staircase(true, staircaseCallback(level.danger+1, true));
+	level.setCell(level.end, up);
+
+	/* staircase down, only when available */
+	let d = level.danger-1;
+	if (d in levels) {
+		let down = new Staircase(false, staircaseCallback(level.danger-1, false));
+		level.setCell(level.start, down);
+	}
 }
 
 function connectHorizontal(level, room1, room2) {
@@ -1564,25 +1723,20 @@ let seed = Date.now();
 console.log("seed", seed);
 ROT.RNG.setSeed(seed);
 
-function switchToLevel(level, xy) {
-	clear();
-
-	setLevel(level);
-	pc.moveTo(xy, level);
-
-	let beings = level.getBeings();
-	beings.forEach(being => add(being));
-}
-
-console.time("generate");
-let level = generate(1);
-console.timeEnd("generate");
-
 start$1(document.querySelector("#intro")).then(() => {
-	init(document.querySelector("#map"));
-	init$1(document.querySelector("#combat"));
-	activate();
-	switchToLevel(level, level.start);
+	init$3(document.querySelector("#map"));
+	init$$1(document.querySelector("#combat"));
+	init$1(document.querySelector("#log"));
+
+	let level = generate(1);
+	level.activate(level.start, pc);
+
+	add$1("A truly beautiful day for a heroic action!");
+	add$1("This tower is surrounded by plains and trees and there might be a princess sleeping on the last floor.");
+	pause();
+	add$1("Apparently the only way to get to her is to advance through all tower levels.");
+	add$1("To move around, use {#fff}arrow keys{}, {#fff}numpad{} or {#fff}vim-keys{}.");
+
 	loop();
 });
 

@@ -16,8 +16,6 @@ let options = {
 let display = new ROT.Display(options);
 let center = new XY(0, 0); // level coords in the middle of the map
 let memory = null;
-let memories = {};
-
 
 function levelToDisplay(xy) { // level XY to display XY; center = middle point
 	let half = new XY(options.width, options.height).scale(0.5).floor();
@@ -68,13 +66,7 @@ export function setCenter(newCenter) {
 
 export function setLevel(l) {
 	level = l;
-
-	if (!(level.id in memories)) {
-		memories[level.id] = new Memory(level);
-	}
-	memory = memories[level.id];
-
-	setCenter(center);
+	memory = Memory.forLevel(level);
 }
 
 function zoom(size2) {
@@ -118,9 +110,16 @@ export function zoomOut() {
 
 export function init(parent) {
 	parent.appendChild(display.getContainer());
-	fit();
 	pubsub.subscribe("visual-change", handleMessage);
 	pubsub.subscribe("visibility-change", handleMessage);
+
+	window.addEventListener("resize", e => {
+		fit();
+		setCenter(center);
+	});
+
+	fit();
+	activate();
 }
 
 export function activate() {

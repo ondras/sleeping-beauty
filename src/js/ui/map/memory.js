@@ -7,12 +7,19 @@ const TREE = new cells.Tree();
 
 const NOISE = new ROT.Noise.Simplex();
 
+const memories = {};
+
 function darken(color) {
 	if (!color) { return color; }
 	return ROT.Color.toRGB(ROT.Color.fromString(color).map(x => x>>1));
 }
 
 export default class Memory {
+	static forLevel(level) {
+		if (!(level.id in memories)) { memories[level.id] = new this(level); }
+		return memories[level.id];
+	}
+
 	constructor(level) {
 		this._level = level;
 		this._memoized = {};
@@ -34,9 +41,8 @@ export default class Memory {
 
 		let fov = pc.getFOV();
 		if (xy in fov) {
-			let visual = this._level.getEntity(xy).getVisual();
-			this._memoize(xy, visual); // FIXME memoize cell only?
-			return visual;
+			this._memoize(xy, this._level.getCell(xy).getVisual()); // memoize cell only
+			return this._level.getEntity(xy).getVisual();
 		} else if (xy in this._memoized) {
 			return this._memoized[xy];
 		} else {

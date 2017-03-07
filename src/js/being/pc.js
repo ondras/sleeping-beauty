@@ -1,10 +1,13 @@
 import XY from "util/xy.js";
 import Being from "./being.js";
+import { BLOCKS_MOVEMENT, BLOCKS_LIGHT, BLOCKS_NONE } from "entity.js";
+import { ATTACK_1, ATTACK_2, MAGIC_1, MAGIC_2 } from "conf.js";
+
 import * as keyboard from "util/keyboard.js";
 import * as rules from "rules.js";
 import * as pubsub from "util/pubsub.js";
-import { BLOCKS_MOVEMENT, BLOCKS_LIGHT, BLOCKS_NONE } from "entity.js";
-import { ATTACK_1, ATTACK_2, MAGIC_1, MAGIC_2 } from "conf.js";
+import * as log from "ui/log.js";
+import * as cells from "level/cells.js";
 
 let COMBAT_OPTIONS = {
 	[ATTACK_1]: 10,
@@ -13,14 +16,23 @@ let COMBAT_OPTIONS = {
 	[MAGIC_2]: 10
 };
 
+const TUTORIAL = {
+	staircase: false,
+	pick: false,
+	door: false,
+	enemy: false
+}
+
 class PC extends Being {
 	constructor() {
-		super({ch:"@", fg:"#fff"});
+		super({ch:"@", fg:"#fff", name:"you"});
 		this._resolve = null; // end turn
 		this._blocks = BLOCKS_NONE; // in order to see stuff via FOV...
 		this._fov = {};
 	}
 
+	describeThe() { return this.toString(); }
+	describeA() { return this.toString(); }
 	getFOV() { return this._fov; }
 
 	getCombatOption() {
@@ -28,7 +40,7 @@ class PC extends Being {
 	}
 
 	act() {
-		console.log("player act");
+		log.pause();
 		let promise = new Promise(resolve => this._resolve = resolve);
 
 		promise = promise.then(() => keyboard.pop());
@@ -38,21 +50,57 @@ class PC extends Being {
 	}
 
 	handleKeyEvent(e) {
+		if (keyboard.isEnter(e)) { return this._activate(this._xy); }
+
 		let dir = keyboard.getDirection(e);
+		if (!dir) { return; }
+
 		let modifier = keyboard.hasModifier(e);
-		if (dir) {
-			let xy = this._xy.plus(dir)
-			if (modifier) {
-				this._interact(xy);
-			} else {
-				this._move(xy);
-			}
+		let xy = this._xy.plus(dir)
+		if (modifier) {
+			this._interact(xy);
+		} else {
+			this._move(xy);
 		}
 	}
 
 	moveTo(xy, level) {
 		super.moveTo(xy, level);
+		if (!this._xy) { return; }
+
 		this._updateFOV();
+
+		let item = this._level.getItem(this._xy);
+		if (item) {
+			return;
+		}
+
+		let cell = this._level.getCell(this._xy);
+		if (cell instanceof cells.Door) {
+			log.add("You pass through %a.", cell);
+		} else if (cell instanceof cells.Staircase) {
+			log.add("%A is here.", cell);
+			if (!TUTORIAL.staircase) {
+				TUTORIAL.staircase = true;
+				log.add("To use the staircase, press {#fff}Enter{}.");
+			}
+		}
+	}
+
+	_activate(xy) { // pick or enter
+		let item = this._level.getItem(xy);
+		if (item) {
+			// fixme pick
+			return;
+		}
+
+		let cell = this._level.getCell(xy);
+		if (cell.activate) {
+			cell.activate(this);
+			this._resolve();
+		} else {
+			log.add("There is nothing you can do here.");
+		}
 	}
 
 	_interact(xy) {
@@ -64,9 +112,14 @@ class PC extends Being {
 	_move(xy) {
 		let entity = this._level.getEntity(xy);
 		if (entity.blocks() >= BLOCKS_MOVEMENT) {
-			// fixme log
+			log.add("You bump into %a.", entity);
+			if (!TUTORIAL.door) {
+				TUTORIAL.door = true;
+				log.add("To interact with stuff, press both a {#fff}modifier key{} (Ctrl, Alt, Shift or Command) and a {#fff}direction key{} (used for movement).");
+			}
 			return;
 		}
+
 		this.moveTo(xy);
 		this._resolve();
 	}

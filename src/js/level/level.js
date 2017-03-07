@@ -1,12 +1,10 @@
 import XY from "util/xy.js";
 import { RATIO } from "conf.js";
 
+import * as actors from "util/actors.js";
 import * as cells from "./cells.js";
 import * as pubsub from "util/pubsub.js";
-
-const ROOM = new cells.Floor();
-const CORRIDOR = new cells.Floor();
-const WALL = new cells.Wall();
+import * as map from "ui/map/map.js";
 
 export function dangerToRadius(danger) {
 	return 30; // fixme
@@ -20,6 +18,17 @@ export default class Level {
 		this._beings = {};
 		this._items = {};
 		this._cells = {};
+	}
+
+	activate(xy, who) {
+		actors.clear();
+
+		who.moveTo(null); // remove from old
+		map.setLevel(this);
+		who.moveTo(xy, this); // put to new
+
+		let beings = Object.keys(this._beings).map(key => this._beings[key]).filter(b => b); /* filter because of empty values */
+		beings.forEach(being => actors.add(being));
 	}
 
 	isInside(xy) {
@@ -54,24 +63,23 @@ export default class Level {
 
 	getEntity(xy) {
 		let key = xy.toString();
-		return this._beings[key] || this._items[key] || this._cells[key] || WALL;
+		return this._beings[key] || this._items[key] || this._cells[key] || cells.WALL;
 	}
 
 	setCell(xy, cell) {
-		this._cells[xy.toString()] = cell;
+		this._cells[xy] = cell;
 	}
 
+	getCell(xy) { return this._cells[xy] || cells.WALL; }
+	getItem(xy) { return this._items[xy]; }
+
 	setBeing(xy, being) {
-		this._beings[xy.toString()] = being;
+		this._beings[xy] = being;
 		pubsub.publish("visual-change", this, {xy});
 	}
 
-	getBeings() {
-		return Object.keys(this._beings).map(key => this._beings[key]);
-	}
-
 	setItem(xy, item) {
-		this._items[xy.toString()] = item;
+		this._items[xy] = item;
 		pubsub.publish("visual-change", this, {xy});
 	}
 
@@ -81,7 +89,7 @@ export default class Level {
 
 		for (xy.x=room.lt.x; xy.x<=room.rb.x; xy.x++) {
 			for (xy.y=room.lt.y; xy.y<=room.rb.y; xy.y++) {
-				this.setCell(xy, ROOM);
+				this.setCell(xy, cells.ROOM);
 			}
 		}
 	}
@@ -92,7 +100,7 @@ export default class Level {
 
 		for (let i=0; i<=steps; i++) {
 			let xy = xy1.lerp(xy2, i/steps).floor();
-			this.setCell(xy, CORRIDOR);
+			this.setCell(xy, cells.CORRIDOR);
 		}
 	}
 
@@ -110,7 +118,7 @@ export default class Level {
 				if (i > -1 && i <= size.x && j > -1 && j <= size.y) continue;
 				xy = room.lt.plus(new XY(i, j));
 				let key = xy.toString();
-				if (this._cells[key] == CORRIDOR) { this.setCell(xy, new cells.Door()); }
+				if (this._cells[key] == cells.CORRIDOR) { this.setCell(xy, new cells.Door()); }
 			}
 		}
 	}

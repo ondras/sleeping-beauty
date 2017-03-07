@@ -94,4 +94,9 @@ body > * {
   bottom: 0;
   width: 60vw;
   height: 40vh;
+  color: #aaa;
+  overflow: hidden;
+}
+#log p {
+  margin-top: 0;
 }
