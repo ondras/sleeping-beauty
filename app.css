@@ -9,11 +9,16 @@ body {
   line-height: 1.2;
   margin: 0;
   font-family: Metrickal, monospace;
+  color: #aaa;
   background-color: #000;
 }
 body > * {
   position: absolute;
-  transition: opacity 1500ms;
+  transition: opacity 2000ms;
+}
+ul {
+  margin: 1.2em 0;
+  padding-left: 4ch;
 }
 .hidden {
   opacity: 0;
@@ -64,7 +69,6 @@ body > * {
   left: 16ch;
   right: 28ch;
   bottom: 6.6em;
-  color: #aaa;
 }
 #intro .text span {
   color: #fff;
@@ -100,11 +104,6 @@ body > * {
   width: 40vw;
   height: 40vh;
   border: 4px solid #000;
-  color: #aaa;
-}
-#status ul {
-  margin: 1.2em 0;
-  padding-left: 4ch;
 }
 #combat {
   right: 0;
@@ -116,12 +115,26 @@ body > * {
   text-align: center;
   color: goldenrod;
 }
+#combat ul {
+  list-style: none;
+  display: inline-block;
+}
+#combat li span {
+  font-size: 24px;
+  vertical-align: middle;
+}
+#combat li:not(.inactive) span {
+  font-weight: bold;
+}
+#combat canvas,
+#combat ul {
+  vertical-align: middle;
+}
 #log {
   left: 0;
   bottom: 0;
   width: 60vw;
   height: 40vh;
-  color: #aaa;
   overflow: hidden;
   border: 4px solid #000;
 }

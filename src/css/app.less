@@ -15,12 +15,18 @@ body {
 	line-height: unit(@em);
 	margin: 0;
 	font-family: Metrickal, monospace;
+	color: #aaa;
 	background-color: #000;
 
 	& > * {
 		position: absolute;
-		transition: opacity 1500ms;
+		transition: opacity 2000ms;
 	}
+}
+
+ul {
+	margin: @em 0;
+	padding-left: 4ch;
 }
 
 .hidden {
@@ -36,3 +42,4 @@ body {
 @import "status.less";
 @import "combat.less";
 @import "log.less";
+

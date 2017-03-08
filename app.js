@@ -725,6 +725,7 @@ class PC extends Being {
 		}
 
 		if (entity instanceof Item) {
+			// fixme tutorial
 			add$1("To pick it up, move there and press {#fff}Enter{}.");
 			return;
 		}
@@ -899,13 +900,40 @@ class Board {
 
 const CELL = 30;
 const CTX = document.createElement("canvas").getContext("2d");
+const LEGEND = document.createElement("ul");
 
 const COLORS = {
-	[ATTACK_1]: "red",
-	[ATTACK_2]: "lime",
+	[ATTACK_1]: "lime",
+	[ATTACK_2]: "red",
 	[MAGIC_1]: "blue",
 	[MAGIC_2]: "yellow"
 };
+
+const LABELS = {
+	[ATTACK_1]: "Attack (you)",
+	[ATTACK_2]: "Attack (enemy)",
+	[MAGIC_1]: "Magic attack (you)",
+	[MAGIC_2]: "Magic attack (enemy)"
+};
+
+function buildLegend() {
+	[ATTACK_1, ATTACK_2, MAGIC_1, MAGIC_2].forEach(id => {
+		let li = document.createElement("li");
+		LEGEND.appendChild(li);
+		li.setAttribute("data-id", id);
+		let hash = document.createElement("span");
+		hash.style.color = COLORS[id];
+		hash.innerHTML = "# ";
+		li.appendChild(hash);
+		li.appendChild(document.createTextNode(LABELS[id]));
+	});
+}
+
+function updateLegend(id) {
+	Array.from(LEGEND.querySelectorAll("[data-id]")).forEach(item => {
+		item.classList.toggle("inactive", item.getAttribute("data-id") != id);
+	});
+}
 
 function drawCell(xy, color, highlight) {
 	let x = (xy.x+0.5)*CELL;
@@ -953,6 +981,7 @@ function draw(board, cursor, highlight = []) {
 	}
 
 	drawCursor(cursor);
+	updateLegend(highlight.length > 0 ? board.at(cursor).value : null);
 }
 
 function init$4(parent) {
@@ -960,6 +989,8 @@ function init$4(parent) {
 	heading.innerHTML = "Game of Thorns";
 	parent.appendChild(heading);
 	parent.appendChild(CTX.canvas);
+	buildLegend();
+	parent.appendChild(LEGEND);
 }
 
 function activate$1() {
