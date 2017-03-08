@@ -21,8 +21,8 @@ function buildStatus() {
 	// fixme colors?
 	let node = document.createElement("li");
 
-	let hp = buildPercentage(pc.hp / pc.maxhp);
-	let mana = buildPercentage(pc.mana / pc.maxmana);
+	let hp = buildPercentage(pc.hp, pc.maxhp);
+	let mana = buildPercentage(pc.mana, pc.maxmana);
 	let str = `${hp} health, ${mana} mana`;
 
 	let gold = pc.inventory.getItemByType("gold");
@@ -37,11 +37,11 @@ function buildStatus() {
 	return node;
 }
 
-function buildPercentage(frac) {
+function buildPercentage(value, limit) {
+	let frac = value/limit;
 	let color = ROT.Color.interpolateHSL([255, 0, 0], [0, 255, 0], frac);
 	color = ROT.Color.toRGB(color);
-	let percent = Math.round(frac*100);
-	return `<span style="color:${color}">${percent}%</span>`;
+	return `<span style="color:${color}">${value}</span>/${limit}`;
 }
 
 function buildItems() {

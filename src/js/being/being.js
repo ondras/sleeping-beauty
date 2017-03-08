@@ -19,12 +19,13 @@ export default class Being extends Entity {
 	getXY() { return this._xy; }
 	getLevel() { return this._level; }
 
-	damage(amount) {
-		if (this.hp <= 0) { return; }
-		this.hp = Math.max(0, this.hp-amount);
-		if (this.hp <= 0) { this.die(); }
+	adjustStat(stat, diff) {
+		this[stat] += diff;
+		this[stat] = Math.max(this[stat], 0);
+		this[stat] = Math.min(this[stat], this[`max${stat}`]);
+		if (stat == "hp" && this[stat] == 0) { this.die(); }
 	}
-	
+
 	die() {
 		this.moveTo(null);
 		actors.remove(this);

@@ -26,7 +26,7 @@ function end() {
 
 function doDamage(attacker, defender, options = {}) {
 	console.log("%s attacks %s (%o)", attacker, defender, options);
-	defender.damage(5);
+	defender.adjustStat("hp", -5);
 	if (defender.hp <= 0) { end(); }
 }
 

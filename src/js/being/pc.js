@@ -78,6 +78,11 @@ class PC extends Being {
 		}
 	}
 
+	adjustStat(stat, diff) {
+		super.adjustStat(stat, diff);
+		status.update();	
+	}
+
 	moveTo(xy, level) {
 		super.moveTo(xy, level);
 		if (!this._xy) { return; }
@@ -106,7 +111,11 @@ class PC extends Being {
 
 	_activate(xy) { // pick or enter
 		let item = this._level.getItem(xy);
-		if (item) { return item.pick(this); }
+		if (item) { 
+			item.pick(this);
+			this._resolve();
+			return;
+		}
 
 		let cell = this._level.getCell(xy);
 		if (cell.activate) {

@@ -212,12 +212,13 @@ class Being extends Entity {
 	getXY() { return this._xy; }
 	getLevel() { return this._level; }
 
-	damage(amount) {
-		if (this.hp <= 0) { return; }
-		this.hp = Math.max(0, this.hp-amount);
-		if (this.hp <= 0) { this.die(); }
+	adjustStat(stat, diff) {
+		this[stat] += diff;
+		this[stat] = Math.max(this[stat], 0);
+		this[stat] = Math.min(this[stat], this[`max${stat}`]);
+		if (stat == "hp" && this[stat] == 0) { this.die(); }
 	}
-	
+
 	die() {
 		this.moveTo(null);
 		remove(this);
@@ -290,7 +291,12 @@ class Item extends Entity {
 	}
 }
 
-
+class Drinkable extends Item {
+	pick(who) {
+		who.getLevel().setItem(who.getXY(), null);
+		add$1("You drink %the.", this);
+	}
+}
 
 class Wearable extends Item {
 	pick(who) {
@@ -328,8 +334,8 @@ function buildStatus() {
 	// fixme colors?
 	let node = document.createElement("li");
 
-	let hp = buildPercentage(pc.hp / pc.maxhp);
-	let mana = buildPercentage(pc.mana / pc.maxmana);
+	let hp = buildPercentage(pc.hp, pc.maxhp);
+	let mana = buildPercentage(pc.mana, pc.maxmana);
 	let str = `${hp} health, ${mana} mana`;
 
 	let gold = pc.inventory.getItemByType("gold");
@@ -344,11 +350,11 @@ function buildStatus() {
 	return node;
 }
 
-function buildPercentage(frac) {
+function buildPercentage(value, limit) {
+	let frac = value/limit;
 	let color = ROT.Color.interpolateHSL([255, 0, 0], [0, 255, 0], frac);
 	color = ROT.Color.toRGB(color);
-	let percent = Math.round(frac*100);
-	return `<span style="color:${color}">${percent}%</span>`;
+	return `<span style="color:${color}">${value}</span>/${limit}`;
 }
 
 function buildItems() {
@@ -361,12 +367,6 @@ function buildItems() {
 	});
 	return frag;
 }
-
-
-var status = Object.freeze({
-	init: init$3,
-	update: update
-});
 
 class Inventory {
 	constructor() {
@@ -665,6 +665,11 @@ class PC extends Being {
 		}
 	}
 
+	adjustStat(stat, diff) {
+		super.adjustStat(stat, diff);
+		update();	
+	}
+
 	moveTo(xy, level) {
 		super.moveTo(xy, level);
 		if (!this._xy) { return; }
@@ -693,7 +698,11 @@ class PC extends Being {
 
 	_activate(xy) { // pick or enter
 		let item = this._level.getItem(xy);
-		if (item) { return item.pick(this); }
+		if (item) { 
+			item.pick(this);
+			this._resolve();
+			return;
+		}
 
 		let cell = this._level.getCell(xy);
 		if (cell.activate) {
@@ -1209,7 +1218,7 @@ function end() {
 
 function doDamage(attacker, defender, options = {}) {
 	console.log("%s attacks %s (%o)", attacker, defender, options);
-	defender.damage(5);
+	defender.adjustStat("hp", -5);
 	if (defender.hp <= 0) { end(); }
 }
 
@@ -1819,10 +1828,6 @@ class Rat extends Enemy {
 	}
 }
 
-window.ss = status;
-
-
-
 class Sword extends Wearable {
 	constructor() {
 		super("weapon", {ch:"(", fg:"#eef", name:"sword"});
@@ -1838,6 +1843,44 @@ class Axe extends Wearable {
 class Shield extends Wearable {
 	constructor() {
 		super("shield", {ch:"]", fg:"#eef", name:"shield"});
+	}
+}
+
+class HealthPotion extends Drinkable {
+	constructor() {
+		super("potion", {ch:"!", fg:"#e00", name:"health potion"});
+		this._strength = 10;
+	}
+
+	pick(who) {
+		super.pick(who);
+		if (who.maxhp == who.hp) {
+			add$1("Nothing happens.");
+		} else if (who.maxhp - who.hp <= this._strength) {
+			add$1("You are completely healed.");
+		} else {
+			add$1("Some of your health is restored.");
+		}
+		who.adjustStat("hp", 10);
+	}
+}
+
+class ManaPotion extends Drinkable {
+	constructor() {
+		super("potion", {ch:"!", fg:"#00e", name:"mana potion"});
+		this._strength = 10;
+	}
+
+	pick(who) {
+		super.pick(who);
+		if (who.maxmana == who.mana) {
+			add$1("Nothing happens.");
+		} else if (who.maxmana - who.mana <= this._strength) {
+			add$1("Your mana is completely refilled.");
+		} else {
+			add$1("Some of your mana is refilled.");
+		}
+		who.adjustStat("mana", 10);
 	}
 }
 
@@ -1868,6 +1911,8 @@ function decorate(level) {
 	level.setItem(level.start.plus(new XY(1, 0)), new Sword());
 	level.setItem(level.start.plus(new XY(2, 0)), new Axe());
 	level.setItem(level.start.plus(new XY(3, 0)), new Shield());
+	level.setItem(level.start.plus(new XY(0, 1)), new HealthPotion());
+	level.setItem(level.start.plus(new XY(0, 2)), new ManaPotion());
 
 	/* staircase up, always */
 	let up = new Staircase(true, staircaseCallback(level.danger+1, true));
