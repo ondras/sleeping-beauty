@@ -1,10 +1,12 @@
 import pc from "being/pc.js";
+import * as pubsub from "util/pubsub.js";
 
 let node;
 
 export function init(n) {
 	node = n;
 	node.classList.remove("hidden");
+	pubsub.subscribe("status-change", update);
 }
 
 export function update() {
@@ -18,7 +20,6 @@ export function update() {
 }
 
 function buildStatus() {
-	// fixme colors?
 	let node = document.createElement("li");
 
 	let hp = buildPercentage(pc.hp, pc.maxhp);

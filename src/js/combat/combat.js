@@ -7,7 +7,7 @@ import * as map from "ui/map/map.js";
 import * as log from "ui/log.js";
 
 import pc from "being/pc.js";
-import { ATTACK_1, ATTACK_2, MAGIC_1, MAGIC_2 } from "conf.js";
+import { ATTACK_1, ATTACK_2, MAGIC_1, MAGIC_2 } from "./types.js";
 
 let tutorial = false;
 

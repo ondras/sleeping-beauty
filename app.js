@@ -174,6 +174,49 @@ String.format.map.he = "describeHe";
 String.format.map.his = "describeHis";
 String.format.map.him = "describeHim";
 
+const storage = Object.create(null);
+
+function publish(message, publisher, data) {
+	let subscribers = storage[message] || [];
+	subscribers.forEach(subscriber => {
+		typeof(subscriber) == "function"
+			? subscriber(message, publisher, data)
+			: subscriber.handleMessage(message, publisher, data);
+	});
+}
+
+function subscribe(message, subscriber) {
+	if (!(message in storage)) { storage[message] = []; }
+	storage[message].push(subscriber);
+}
+
+class Inventory {
+	constructor() {
+		this._items = [];
+	}
+
+	getItems() {
+		return this._items;
+	}
+
+	getItemByType(type) {
+		return this._items.filter(i => i.getType() == type)[0];
+	}
+
+	removeItem(item) {
+		let index = this._items.indexOf(item);
+		if (index > -1) { this._items.splice(index, 1); }
+		publish("status-change");
+		return this;
+	}
+
+	addItem(item) {
+		this._items.push(item);
+		publish("status-change");
+		return this;
+	}
+}
+
 let queue = [];
 
 function add(actor) {
@@ -202,11 +245,12 @@ class Being extends Entity {
 		this._xy = null;
 		this._level = null;
 
+		this.inventory = new Inventory();
+
 		this.maxhp = 10;
 		this.hp = this.maxhp;
 		this.maxmana = 10;
 		this.mana = this.maxmana;
-		this.mana = 0;
 	}
 
 	getXY() { return this._xy; }
@@ -313,87 +357,10 @@ class Wearable extends Item {
 	}
 }
 
-let node$1;
-
-function init$3(n) {
-	node$1 = n;
-	node$1.classList.remove("hidden");
-}
-
-function update() {
-	node$1.innerHTML = "You have:";
-
-	let ul = document.createElement("ul");
-	node$1.appendChild(ul);
-
-	ul.appendChild(buildStatus());
-	ul.appendChild(buildItems());
-}
-
-function buildStatus() {
-	// fixme colors?
-	let node = document.createElement("li");
-
-	let hp = buildPercentage(pc.hp, pc.maxhp);
-	let mana = buildPercentage(pc.mana, pc.maxmana);
-	let str = `${hp} health, ${mana} mana`;
-
-	let gold = pc.inventory.getItemByType("gold");
-	let coins = (gold ? gold.amount : 0);
-	if (coins > 0) { 
-		let color = gold.getVisual().fg;
-		let suffix = (coins > 1 ? "s" : "");
-		str = `${str}, <span style="color:${color}">${coins}</span> ${gold.toString()}${suffix}`;
-	}
-
-	node.innerHTML = str;
-	return node;
-}
-
-function buildPercentage(value, limit) {
-	let frac = value/limit;
-	let color = ROT.Color.interpolateHSL([255, 0, 0], [0, 255, 0], frac);
-	color = ROT.Color.toRGB(color);
-	return `<span style="color:${color}">${value}</span>/${limit}`;
-}
-
-function buildItems() {
-	let frag = document.createDocumentFragment();
-	let items = pc.inventory.getItems().filter(i => i.getType() != "gold");
-	items.forEach(item => {
-		let node = document.createElement("li");
-		node.innerHTML = item.toString();
-		frag.appendChild(node);
-	});
-	return frag;
-}
-
-class Inventory {
-	constructor() {
-		this._items = [];
-	}
-
-	getItems() {
-		return this._items;
-	}
-
-	getItemByType(type) {
-		return this._items.filter(i => i.getType() == type)[0];
-	}
-
-	removeItem(item) {
-		let index = this._items.indexOf(item);
-		if (index > -1) { this._items.splice(index, 1); }
-		update();
-		return this;
-	}
-
-	addItem(item) {
-		this._items.push(item);
-		update();
-		return this;
-	}
-}
+const ATTACK_1 = "a1";
+const ATTACK_2 = "a2";
+const MAGIC_1 = "m1";
+const MAGIC_2 = "m2";
 
 const RATIO = 1.6;
 
@@ -407,11 +374,6 @@ const DIRS = [
 	new XY(-1,  1),
 	new XY(-1,  0)
 ];
-
-const ATTACK_1 = "a1";
-const ATTACK_2 = "a2";
-const MAGIC_1 = "m1";
-const MAGIC_2 = "m2";
 
 const CONSUMERS = [];
 
@@ -477,22 +439,6 @@ const AI_RANGE = 7;
 const AI_IDLE = .5;
 const PC_SIGHT = 8;
 
-const storage = Object.create(null);
-
-function publish(message, publisher, data) {
-	let subscribers = storage[message] || [];
-	subscribers.forEach(subscriber => {
-		typeof(subscriber) == "function"
-			? subscriber(message, publisher, data)
-			: subscriber.handleMessage(message, publisher, data);
-	});
-}
-
-function subscribe(message, subscriber) {
-	if (!(message in storage)) { storage[message] = []; }
-	storage[message].push(subscriber);
-}
-
 class Floor extends Entity {
 	constructor() {
 		super({ch:".", fg:"#aaa", name:"stone floor"});
@@ -519,9 +465,9 @@ class Tree extends Entity {
 }
 
 class Door extends Entity {
-	constructor() {
+	constructor(closed) {
 		super({ch:"/", fg:"#963"});
-		ROT.RNG.getUniform() > 0.5 ? this._open() : this._close();
+		closed ? this._close() : this._open();
 	}
 
 	isOpen() { return this._isOpen; }
@@ -620,7 +566,6 @@ class PC extends Being {
 		this._resolve = null; // end turn
 		this.blocks = BLOCKS_NONE; // in order to see stuff via FOV...
 		this.fov = {};
-		this.inventory = new Inventory();
 
 		subscribe("topology-change", this);
 	}
@@ -667,7 +612,7 @@ class PC extends Being {
 
 	adjustStat(stat, diff) {
 		super.adjustStat(stat, diff);
-		update();	
+		publish("status-change");
 	}
 
 	moveTo(xy, level) {
@@ -993,7 +938,7 @@ function draw(board, cursor, highlight = []) {
 	updateLegend(highlight.length > 0 ? board.at(cursor).value : null);
 }
 
-function init$4(parent) {
+function init$3(parent) {
 	let heading = document.createElement("p");
 	heading.innerHTML = "Game of Thorns";
 	parent.appendChild(heading);
@@ -1113,7 +1058,7 @@ function fit() {
 	node.style.top = `${offset.y}px`;
 }
 
-function update$1(levelXY) {
+function update(levelXY) {
 	let visual = memory.visualAt(levelXY);
 	if (!visual) { return; }
 	let displayXY = levelToDisplay(levelXY);
@@ -1127,7 +1072,7 @@ function setCenter(newCenter) {
 	let displayXY = new XY();
 	for (displayXY.x=0; displayXY.x<options.width; displayXY.x++) {
 		for (displayXY.y=0; displayXY.y<options.height; displayXY.y++) {
-			update$1(displayToLevel(displayXY));
+			update(displayToLevel(displayXY));
 		}
 	}
 }
@@ -1163,7 +1108,7 @@ function handleMessage(message, publisher, data) {
 
 		case "visual-change":
 			if (publisher != level) { return; }
-			update$1(data.xy);
+			update(data.xy);
 		break;
 	}
 }
@@ -1176,7 +1121,7 @@ function zoomOut() {
 	return zoom(FONT_BASE);
 }
 
-function init$5(parent) {
+function init$4(parent) {
 	parent.appendChild(display.getContainer());
 	subscribe("visual-change", handleMessage);
 	subscribe("visibility-change", handleMessage);
@@ -1280,7 +1225,7 @@ function drawFull() {
 }
 
 function init$1(parent) {
-	init$4(parent);
+	init$3(parent);
 	checkSegments();
 	drawFull();
 }
@@ -1323,8 +1268,8 @@ const WIDTH = 13;
 
 const TEST = new Array(11).join("\n");
 
-let node$3 = document.createElement("div");
-node$3.classList.add("tower");
+let node$2 = document.createElement("div");
+node$2.classList.add("tower");
 
 function mid() {
 	let content = "";
@@ -1386,9 +1331,9 @@ function colorize(ch, index, str) {
 }
 
 function fit$1() {
-	let avail = node$3.parentNode.offsetHeight;
-	node$3.innerHTML = TEST;
-	let rows = Math.floor(TEST.length*avail/node$3.offsetHeight) - 4;
+	let avail = node$2.parentNode.offsetHeight;
+	node$2.innerHTML = TEST;
+	let rows = Math.floor(TEST.length*avail/node$2.offsetHeight) - 4;
 
 	rows -= START.length;
 	rows -= END.length;
@@ -1399,16 +1344,16 @@ function fit$1() {
 	}
 	all = all.concat(END);
 
-	node$3.innerHTML = all.join("\n").replace(/\S/g, colorize);
+	node$2.innerHTML = all.join("\n").replace(/\S/g, colorize);
 }
 
 function getNode() {
-	return node$3;
+	return node$2;
 }
 
-let node$4 = document.createElement("div");
-node$4.classList.add("title");
-node$4.innerHTML =                                               
+let node$3 = document.createElement("div");
+node$3.classList.add("title");
+node$3.innerHTML =                                               
 ".oPYo. 8                       o             \n" +
 "8      8                                     \n" +
 "`Yooo. 8 .oPYo. .oPYo. .oPYo. o8 odYo. .oPYo.\n" +
@@ -1427,12 +1372,12 @@ node$4.innerHTML =
 "                                    ooP'     ";
 
 function getNode$1() {
-	return node$4;
+	return node$3;
 }
 
-let node$5 = document.createElement("div");
-node$5.classList.add("bottom");
-node$5.innerHTML = "BOTTOM";
+let node$4 = document.createElement("div");
+node$4.classList.add("bottom");
+node$4.innerHTML = "BOTTOM";
 
 const TEST$1 = "xxxxxxxxxx";
 const PAD = "  ";
@@ -1475,9 +1420,9 @@ function colorizeFlower(ch) {
 }
 
 function fit$2() {
-	let avail = node$5.parentNode.offsetWidth;
-	node$5.innerHTML = TEST$1;
-	let columns = Math.floor(TEST$1.length*avail/node$5.offsetWidth) - 2;
+	let avail = node$4.parentNode.offsetWidth;
+	node$4.innerHTML = TEST$1;
+	let columns = Math.floor(TEST$1.length*avail/node$4.offsetWidth) - 2;
 
 	let knight = KNIGHT.join("\n").replace(/\S/g, colorizeKnight).split("\n");
 	let flower = FLOWER.join("\n").replace(/\S/g, colorizeFlower).split("\n");
@@ -1496,23 +1441,23 @@ function fit$2() {
 	let final = `<span class='grass'>${new Array(columns+1).join("^")}</span>`;
 	result.push(final);
 
-	node$5.innerHTML = result.join("\n");
+	node$4.innerHTML = result.join("\n");
 
 }
 
 function getNode$2() {
-	return node$5;
+	return node$4;
 }
 
-let node$6 = document.createElement("div");
-node$6.classList.add("text");
-node$6.innerHTML = 
+let node$5 = document.createElement("div");
+node$5.classList.add("text");
+node$5.innerHTML = 
 `Into a profound slumber she sank, surrounded only by dense brambles, thorns and roses.
 Many advanturers tried to find and rescue her, but none came back...
 <br/><br/><span>Hit [Enter] to start the game</span>`;
 
 function getNode$3() {
-	return node$6;
+	return node$5;
 }
 
 const FACTS = [
@@ -1524,23 +1469,23 @@ const FACTS = [
 	"This game is best played with a maximized browser window"
 ];
 
-let node$7 = document.createElement("div");
-node$7.classList.add("funfact");
-node$7.innerHTML = `Fun Fact: ${FACTS.random()}`;
+let node$6 = document.createElement("div");
+node$6.classList.add("funfact");
+node$6.innerHTML = `Fun Fact: ${FACTS.random()}`;
 
 function getNode$4() {
-	return node$7;
+	return node$6;
 }
 
 let resolve$2 = null;
-let node$2 = null;
+let node$1 = null;
 
 function handleKeyEvent$2(e) {
 	if (!isEnter(e)) { return; }
 
 	pop();
 	window.removeEventListener("resize", onResize);
-	node$2.parentNode.removeChild(node$2);
+	node$1.parentNode.removeChild(node$1);
 
 	resolve$2();
 }
@@ -1551,12 +1496,12 @@ function onResize(e) {
 }
 
 function start$1(n) {
-	node$2 = n;
-	node$2.appendChild(getNode$1());
-	node$2.appendChild(getNode$2());
-	node$2.appendChild(getNode$3());
-	node$2.appendChild(getNode());
-	node$2.appendChild(getNode$4());
+	node$1 = n;
+	node$1.appendChild(getNode$1());
+	node$1.appendChild(getNode$2());
+	node$1.appendChild(getNode$3());
+	node$1.appendChild(getNode());
+	node$1.appendChild(getNode$4());
 
 	fit$1();
 	fit$2();
@@ -1565,6 +1510,61 @@ function start$1(n) {
 	window.addEventListener("resize", onResize);
 
 	return new Promise(r => resolve$2 = r);
+}
+
+let node$7;
+
+function init$5(n) {
+	node$7 = n;
+	node$7.classList.remove("hidden");
+	subscribe("status-change", update$1);
+}
+
+function update$1() {
+	node$7.innerHTML = "You have:";
+
+	let ul = document.createElement("ul");
+	node$7.appendChild(ul);
+
+	ul.appendChild(buildStatus());
+	ul.appendChild(buildItems());
+}
+
+function buildStatus() {
+	let node = document.createElement("li");
+
+	let hp = buildPercentage(pc.hp, pc.maxhp);
+	let mana = buildPercentage(pc.mana, pc.maxmana);
+	let str = `${hp} health, ${mana} mana`;
+
+	let gold = pc.inventory.getItemByType("gold");
+	let coins = (gold ? gold.amount : 0);
+	if (coins > 0) { 
+		let color = gold.getVisual().fg;
+		let suffix = (coins > 1 ? "s" : "");
+		str = `${str}, <span style="color:${color}">${coins}</span> ${gold.toString()}${suffix}`;
+	}
+
+	node.innerHTML = str;
+	return node;
+}
+
+function buildPercentage(value, limit) {
+	let frac = value/limit;
+	let color = ROT.Color.interpolateHSL([255, 0, 0], [0, 255, 0], frac);
+	color = ROT.Color.toRGB(color);
+	return `<span style="color:${color}">${value}</span>/${limit}`;
+}
+
+function buildItems() {
+	let frag = document.createDocumentFragment();
+	let items = pc.inventory.getItems().filter(i => i.getType() != "gold");
+	items.forEach(item => {
+		let node = document.createElement("li");
+		node.innerHTML = item.toString();
+		frag.appendChild(node);
+	});
+	return frag;
 }
 
 function dangerToRadius(danger) {
@@ -1665,7 +1665,8 @@ class Level {
 		}
 	}
 
-	carveDoors(room) {
+	carveDoors(room, options = {}) {
+		options = Object.assign({doorChance:0.5, closedChance:0.5}, options);
 		let xy;
 		let size = room.rb.minus(room.lt);
 
@@ -1679,7 +1680,11 @@ class Level {
 				if (i > -1 && i <= size.x && j > -1 && j <= size.y) continue;
 				xy = room.lt.plus(new XY(i, j));
 				let key = xy.toString();
-				if (this._cells[key] == CORRIDOR) { this.setCell(xy, new Door()); }
+				if (this._cells[key] != CORRIDOR) { continue; }
+
+				if (ROT.RNG.getUniform() > options.doorChance) { continue; }
+				let closed = (ROT.RNG.getUniform() < options.closedChance);
+				this.setCell(xy, new Door(closed));
 			}
 		}
 	}
@@ -1902,7 +1907,6 @@ function decorate(level) {
 
 	level.start = r1.center;
 	level.end = r2.center;
-//	level.end = level.start.plus({x:1, y:0});
 
 	level.rooms.forEach(room => level.carveDoors(room));	
 
@@ -2029,12 +2033,12 @@ console.log("seed", seed);
 ROT.RNG.setSeed(seed);
 
 function init$$1() {
-	init$5(document.querySelector("#map"));
+	init$4(document.querySelector("#map"));
 	init$1(document.querySelector("#combat"));
 	init$2(document.querySelector("#log"));
-	init$3(document.querySelector("#status"));
+	init$5(document.querySelector("#status"));
 
-	update();
+	update$1();
 
 	let level = generate(1);
 	level.activate(level.start, pc);

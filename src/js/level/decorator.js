@@ -23,7 +23,6 @@ export default function decorate(level) {
 
 	level.start = r1.center;
 	level.end = r2.center;
-//	level.end = level.start.plus({x:1, y:0});
 
 	level.rooms.forEach(room => level.carveDoors(room));	
 

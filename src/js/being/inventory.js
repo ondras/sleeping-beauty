@@ -1,4 +1,4 @@
-import * as status from "ui/status.js";
+import * as pubsub from "util/pubsub.js";
 
 export default class Inventory {
 	constructor() {
@@ -16,13 +16,13 @@ export default class Inventory {
 	removeItem(item) {
 		let index = this._items.indexOf(item);
 		if (index > -1) { this._items.splice(index, 1); }
-		status.update();
+		pubsub.publish("status-change");
 		return this;
 	}
 
 	addItem(item) {
 		this._items.push(item);
-		status.update();
+		pubsub.publish("status-change");
 		return this;
 	}
 }

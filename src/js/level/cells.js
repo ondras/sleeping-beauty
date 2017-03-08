@@ -28,9 +28,9 @@ export class Tree extends Entity {
 }
 
 export class Door extends Entity {
-	constructor() {
+	constructor(closed) {
 		super({ch:"/", fg:"#963"});
-		ROT.RNG.getUniform() > 0.5 ? this._open() : this._close();
+		closed ? this._close() : this._open();
 	}
 
 	isOpen() { return this._isOpen; }

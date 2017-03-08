@@ -1,5 +1,6 @@
 import XY from "util/xy.js";
 import Entity, { BLOCKS_MOVEMENT } from "entity.js";
+import Inventory from "./inventory.js";
 import * as actors from "util/actors.js";
 
 export default class Being extends Entity {
@@ -9,11 +10,12 @@ export default class Being extends Entity {
 		this._xy = null;
 		this._level = null;
 
+		this.inventory = new Inventory();
+
 		this.maxhp = 10;
 		this.hp = this.maxhp;
 		this.maxmana = 10;
 		this.mana = this.maxmana;
-		this.mana = 0;
 	}
 
 	getXY() { return this._xy; }

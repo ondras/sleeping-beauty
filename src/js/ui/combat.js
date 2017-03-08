@@ -1,5 +1,5 @@
 import XY from "util/xy.js";
-import { ATTACK_1, ATTACK_2, MAGIC_1, MAGIC_2 } from "conf.js";
+import { ATTACK_1, ATTACK_2, MAGIC_1, MAGIC_2 } from "combat/types.js";
 
 const CELL = 30;
 const CTX = document.createElement("canvas").getContext("2d");

@@ -104,7 +104,8 @@ export default class Level {
 		}
 	}
 
-	carveDoors(room) {
+	carveDoors(room, options = {}) {
+		options = Object.assign({doorChance:0.5, closedChance:0.5}, options);
 		let xy;
 		let size = room.rb.minus(room.lt);
 
@@ -118,7 +119,11 @@ export default class Level {
 				if (i > -1 && i <= size.x && j > -1 && j <= size.y) continue;
 				xy = room.lt.plus(new XY(i, j));
 				let key = xy.toString();
-				if (this._cells[key] == cells.CORRIDOR) { this.setCell(xy, new cells.Door()); }
+				if (this._cells[key] != cells.CORRIDOR) { continue; }
+
+				if (ROT.RNG.getUniform() > options.doorChance) { continue; }
+				let closed = (ROT.RNG.getUniform() < options.closedChance);
+				this.setCell(xy, new cells.Door(closed));
 			}
 		}
 	}

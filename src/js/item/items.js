@@ -1,5 +1,5 @@
 import Item, {Wearable, Drinkable} from "./item.js";
-import * as status from "ui/status.js";
+import * as pubsub from "util/pubsub.js";
 import * as log from "ui/log.js";
 
 export class Gold extends Item {
@@ -18,7 +18,7 @@ export class Gold extends Item {
 			who.inventory.addItem(this);
 		}
 
-		status.update();
+		pubsub.publish("status-change");
 	}
 }
 
