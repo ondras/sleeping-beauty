@@ -1,16 +1,9 @@
 import XY from "util/xy.js";
-import { ATTACK_1, ATTACK_2, MAGIC_1, MAGIC_2 } from "combat/types.js";
+import { ATTACK_1, ATTACK_2, MAGIC_1, MAGIC_2, COLORS } from "combat/types.js";
 
 const CELL = 30;
 const CTX = document.createElement("canvas").getContext("2d");
 const LEGEND = document.createElement("ul");
-
-const COLORS = {
-	[ATTACK_1]: "lime",
-	[ATTACK_2]: "red",
-	[MAGIC_1]: "blue",
-	[MAGIC_2]: "yellow"
-}
 
 const LABELS = {
 	[ATTACK_1]: "Attack (you)",

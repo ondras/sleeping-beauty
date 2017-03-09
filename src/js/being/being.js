@@ -2,33 +2,40 @@ import XY from "util/xy.js";
 import Entity, { BLOCKS_MOVEMENT } from "entity.js";
 import Inventory from "./inventory.js";
 import * as actors from "util/actors.js";
+import * as cells from "level/cells.js";
+
+const IT = ["it", "her", "him"];
 
 export default class Being extends Entity {
 	constructor(visual) {
 		super(visual);
+		this.inventory = new Inventory();
+
 		this.blocks = BLOCKS_MOVEMENT;
 		this._xy = null;
 		this._level = null;
 		this.attack = 0;
 		this.defense = 0;
-
-		this.inventory = new Inventory();
-
-		this.maxhp = 10;
-		this.hp = this.maxhp;
-		this.maxmana = 10;
-		this.mana = this.maxmana;
+		this.sex = 0;
+		this.hp = this.maxhp = 10;
+		this.mana = this.maxmana = 10;
 	}
 
 	getXY() { return this._xy; }
 	getLevel() { return this._level; }
 
 	getAttack() {
-		return this.attack; // fixme items
+		let modifier = this.inventory.getItems().reduce((acc, item) => {
+			return acc + (item.modifies == "attack" ? item.modifier : 0);
+		}, 0);
+		return this.attack + modifier;
 	}
 
 	getDefense() {
-		return this.defense; // fixme items
+		let modifier = this.inventory.getItems().reduce((acc, item) => {
+			return acc + (item.modifies == "defense" ? item.modifier : 0);
+		}, 0);
+		return this.defense + modifier;
 	}
 
 	adjustStat(stat, diff) {
@@ -46,7 +53,7 @@ export default class Being extends Entity {
 		actors.remove(this);
 		
 		let items = this.inventory.getItems();
-		if (items.length > 0) {
+		if (items.length > 0 && level.getEntity(xy) instanceof cells.Floor) {
 			let item = items.random();
 			this.inventory.removeItem(item);
 			level.setItem(xy, item);
@@ -73,7 +80,7 @@ export default class Being extends Entity {
 	}
 
 	describeIt() {
-    	return "it";
+    	return IT[this.sex];
 	}
 
 	describeVerb(verb) {

@@ -27,11 +27,17 @@ class Autonomous extends Being {
 	act() {
 		return ai.act(this);
 	}
+
+	getChat() {
+		return null;
+	}
 }
 
 export class Rat extends Autonomous {
 	constructor() {
-		super({ch:"r", fg:"gray", name:"rat"});
+		super({ch:"r", fg:"#aaa", name:"rat"});
+		this.mana = this.maxmana = 0;
+		this.hp = this.maxhp = 1;
 	}
 }
 
@@ -49,6 +55,7 @@ export class Hero extends Autonomous {
 			name: `${race} ${type}`
 		};
 		super(visual);
+		this.sex = 2;
 		this.ai.hostile = false;
 	}
 

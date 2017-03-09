@@ -1,6 +1,6 @@
-// fixme ukazovat level
 import pc from "being/pc.js";
 import * as pubsub from "util/pubsub.js";
+import { COLORS } from "combat/types.js";
 
 let node;
 
@@ -55,7 +55,14 @@ function buildItems() {
 	let items = pc.inventory.getItems().filter(i => i.getType() != "gold");
 	items.forEach(item => {
 		let node = document.createElement("li");
-		node.innerHTML = item.toString();
+		let str = item.toString();
+		if (item.modifier) {
+			str = `${str} (${item.modifier > 0 ? "+" : ""}${item.modifier})`;
+		}
+		if (item.combat) {
+			str = `${str} (+<strong style="color:${COLORS[item.combat]}">#</strong>)`;
+		}
+		node.innerHTML = str;
 		frag.appendChild(node);
 	});
 	return frag;

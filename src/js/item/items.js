@@ -3,43 +3,79 @@ import * as pubsub from "util/pubsub.js";
 import * as log from "ui/log.js";
 import * as rules from "rules.js";
 
-export class Gold extends Item {
+const WEAPON_PREFIXES = {
+	"sharp": +1,
+	"blunt": -1,
+	"epic": 2
+};
+
+const SHIELD_PREFIXES = {
+	"small": -1,
+	"large": 1,
+	"tower": 2
+};
+
+const ARMOR_PREFIXES = {
+	"leather": 1,
+	"iron": 2,
+	"tempered": 3
+};
+
+export class Dagger extends Wearable {
 	constructor() {
-		super("gold", {ch:"$", fg:"#fc0", name:"golden coin"});
-		this.amount = 1;
-	}
-
-	pick(who) {
-		super.pick(who);
-
-		let other = who.inventory.getItemByType(this._type);
-		if (other) {
-			other.amount++;
-		} else {
-			who.inventory.addItem(this);
-		}
-
-		pubsub.publish("status-change");
+		super("weapon", {ch:"(", fg:"#ccd", name:"dagger"}, 1, WEAPON_PREFIXES);
 	}
 }
+Dagger.danger = 1;
 
 export class Sword extends Wearable {
 	constructor() {
-		super("weapon", {ch:"(", fg:"#eef", name:"sword"});
+		super("weapon", {ch:"(", fg:"#dde", name:"sword"}, 2, WEAPON_PREFIXES);
 	}
 }
+Sword.danger = 2;
 
 export class Axe extends Wearable {
 	constructor() {
-		super("weapon", {ch:")", fg:"#eef", name:"axe"});
+		super("weapon", {ch:")", fg:"#ccd", name:"axe"}, 3, WEAPON_PREFIXES);
 	}
 }
+Axe.danger = 3;
+
+export class Mace extends Wearable {
+	constructor() {
+		super("weapon", {ch:")", fg:"#bbc", name:"mace"}, 3, WEAPON_PREFIXES);
+	}
+}
+Mace.danger = 4;
+
+export class GreatSword extends Wearable {
+	constructor() {
+		super("weapon", {ch:"(", fg:"#fff", name:"greatsword"}, 4, WEAPON_PREFIXES);
+	}
+}
+GreatSword.danger = 5;
 
 export class Shield extends Wearable {
 	constructor() {
-		super("shield", {ch:"]", fg:"#eef", name:"shield"});
+		super("shield", {ch:"[", fg:"#841", name:"shield"}, 2, SHIELD_PREFIXES);
 	}
 }
+Shield.danger = 2;
+
+export class Helmet extends Wearable {
+	constructor() {
+		super("helmet", {ch:"]", fg:"#631", name:"helmet"}, 1, ARMOR_PREFIXES);
+	}
+}
+Helmet.danger = 2;
+
+export class Armor extends Wearable {
+	constructor() {
+		super("armor", {ch:"]", fg:"#a62", name:"armor"}, 2, ARMOR_PREFIXES);
+	}
+}
+Armor.danger = 3;
 
 export class HealthPotion extends Drinkable {
 	constructor() {
@@ -74,5 +110,25 @@ export class ManaPotion extends Drinkable {
 			log.add("Some of your mana is refilled.");
 		}
 		who.adjustStat("mana", this._strength);
+	}
+}
+
+export class Gold extends Item {
+	constructor() {
+		super("gold", {ch:"$", fg:"#fc0", name:"golden coin"});
+		this.amount = 1;
+	}
+
+	pick(who) {
+		super.pick(who);
+
+		let other = who.inventory.getItemByType(this._type);
+		if (other) {
+			other.amount++;
+		} else {
+			who.inventory.addItem(this);
+		}
+
+		pubsub.publish("status-change");
 	}
 }

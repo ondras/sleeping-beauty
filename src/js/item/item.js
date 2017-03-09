@@ -1,6 +1,14 @@
-import XY from "util/xy.js";
 import Entity from "entity.js";
 import * as log from "ui/log.js";
+import * as rules from "rules.js";
+import { ATTACK_1, ATTACK_2, MAGIC_1, MAGIC_2, COLORS } from "combat/types.js";
+
+const SUFFIXES = {
+	[ATTACK_1]: "power",
+	[ATTACK_2]: "treachery",
+	[MAGIC_1]: "magical domination",
+	[MAGIC_2]: "magical weakness"
+}
 
 export default class Item extends Entity {
 	constructor(type, visual) {
@@ -36,6 +44,31 @@ export class Drinkable extends Item {
 }
 
 export class Wearable extends Item {
+	constructor(type, visual, modifier, prefixes) {
+		super(type, visual);
+		this.modifies = (type == "weapon" ? "attack" : "defense");
+		this.modifier = modifier;
+
+		this.combat = null;
+
+		let avail = Object.keys(prefixes);
+		if (avail.length > 0 && ROT.RNG.getUniform() > 0.5) {
+			let prefix = avail.random();
+			this._visual.name = `${prefix} ${this._visual.name}`;
+			this.modifier += prefixes[prefix];
+		}
+
+		if (ROT.RNG.getUniform() < rules.COMBAT_MODIFIER) {
+			let combat = [ATTACK_1, ATTACK_2, MAGIC_1, MAGIC_2].random();
+			this.combat = combat;
+			this._visual.name = `${this._visual.name} of ${SUFFIXES[combat]}`;
+			let color1 = ROT.Color.fromString(COLORS[combat]);
+			let color2 = ROT.Color.fromString(this._visual.fg);
+			let color3 = ROT.Color.interpolate(color1, color2, 0.5);
+			this._visual.fg = ROT.Color.toRGB(color3);
+		}
+	}
+
 	pick(who) {
 		super.pick(who);
 

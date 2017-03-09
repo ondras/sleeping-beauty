@@ -235,87 +235,6 @@ function loop() {
 	actor.act().then(loop);
 }
 
-class Being extends Entity {
-	constructor(visual) {
-		super(visual);
-		this.blocks = BLOCKS_MOVEMENT;
-		this._xy = null;
-		this._level = null;
-		this.attack = 0;
-		this.defense = 0;
-
-		this.inventory = new Inventory();
-
-		this.maxhp = 10;
-		this.hp = this.maxhp;
-		this.maxmana = 10;
-		this.mana = this.maxmana;
-	}
-
-	getXY() { return this._xy; }
-	getLevel() { return this._level; }
-
-	getAttack() {
-		return this.attack; // fixme items
-	}
-
-	getDefense() {
-		return this.defense; // fixme items
-	}
-
-	adjustStat(stat, diff) {
-		this[stat] += diff;
-		this[stat] = Math.max(this[stat], 0);
-		this[stat] = Math.min(this[stat], this[`max${stat}`]);
-		if (stat == "hp" && this[stat] == 0) { this.die(); }
-	}
-
-	die() {
-		let level = this._level;
-		let xy = this._xy;
-
-		this.moveTo(null);
-		remove(this);
-		
-		let items = this.inventory.getItems();
-		if (items.length > 0) {
-			let item = items.random();
-			this.inventory.removeItem(item);
-			level.setItem(xy, item);
-		}
-	}
-
-	act() {
-		return Promise.resolve();
-	}
-
-	moveBy(dxy) {
-		return this.moveTo(this._xy.plus(dxy));
-	}
-
-	moveTo(xy, level) {
-		this._xy && this._level.setBeing(this._xy, null); // remove from old position
-
-		this._level = level || this._level;
-		this._xy = xy;
-
-		this._xy && this._level.setBeing(this._xy, this); // draw at new position
-		
-		return this;
-	}
-
-	describeIt() {
-    	return "it";
-	}
-
-	describeVerb(verb) {
-	    return `${verb}${verb.charAt(verb.length-1) == "s" || verb == "do" ? "es" : "s"}`;
-	}
-}
-
-String.format.map.verb = "describeVerb";
-String.format.map.it = "describeIt";
-
 let node;
 let current = null;
 
@@ -347,140 +266,6 @@ function init$2(n) {
 	window.addEventListener("resize", e => node.scrollTop = node.scrollHeight);
 	pause();
 }
-
-class Item extends Entity {
-	constructor(type, visual) {
-		super(visual);
-		this._type = type;
-	}
-
-	getType() { return this._type; }
-
-	pick(who) {
-		who.getLevel().setItem(who.getXY(), null);
-		add$1("You pick up %the.", this);
-	}
-}
-
-class Drinkable extends Item {
-	constructor(strength, visual) {
-		super("potion", visual);
-		this._strength = strength;
-
-		if (ROT.RNG.getUniform() > 0.5) {
-			let diff = Math.round(strength/5);
-			if (ROT.RNG.getUniform() > 0.5) { diff *= -1; }
-			this._strength += diff;
-			this._visual.name = `${diff > 0 ? "strong" : "weak"} ${this._visual.name}`;
-		}
-	}
-
-	pick(who) {
-		who.getLevel().setItem(who.getXY(), null);
-		add$1("You drink %the.", this);
-	}
-}
-
-class Wearable extends Item {
-	pick(who) {
-		super.pick(who);
-
-		let other = who.inventory.getItemByType(this._type);
-		if (other) {
-			who.inventory.removeItem(other);
-			who.getLevel().setItem(who.getXY(), other);
-			add$1("You drop %the.", other);
-		}
-
-		who.inventory.addItem(this);
-	}
-}
-
-const ATTACK_1 = "a1";
-const ATTACK_2 = "a2";
-const MAGIC_1 = "m1";
-const MAGIC_2 = "m2";
-
-const RATIO = 1.6;
-
-const DIRS = [
-	new XY(-1, -1),
-	new XY( 0, -1),
-	new XY( 1, -1),
-	new XY( 1,  0),
-	new XY( 1,  1),
-	new XY( 0,  1),
-	new XY(-1,  1),
-	new XY(-1,  0)
-];
-
-const CONSUMERS = [];
-
-const DIR_NUMPAD = [ROT.VK_NUMPAD7, ROT.VK_NUMPAD8, ROT.VK_NUMPAD9, ROT.VK_NUMPAD6, ROT.VK_NUMPAD3, ROT.VK_NUMPAD2, ROT.VK_NUMPAD1, ROT.VK_NUMPAD4];
-const DIR_CODES = [ROT.VK_HOME, ROT.VK_UP, ROT.VK_PAGE_UP, ROT.VK_RIGHT, ROT.VK_PAGE_DOWN, ROT.VK_DOWN, ROT.VK_END, ROT.VK_LEFT];
-const DIR_CHARS = ["y", "k", "u", "l", "n", "j", "b", "h"];
-
-function getDirection(e) {
-	if (e.type == "keypress") {
-		let ch = String.fromCharCode(e.charCode).toLowerCase();
-		let index = DIR_CHARS.indexOf(ch);
-		if (index in DIRS) { return DIRS[index]; }
-	}
-	if (e.type == "keydown") {
-		let index = DIR_CODES.indexOf(e.keyCode);
-		if (index in DIRS) { return DIRS[index]; }
-
-		index = DIR_NUMPAD.indexOf(e.keyCode);
-		if (index in DIRS) { return DIRS[index]; }
-	}
-	return null;
-}
-
-function hasModifier(e) {
-	return (e.ctrlKey || e.shiftKey || e.altKey || e.metaKey);
-}
-
-function isEnter(e) {
-	if (e.type != "keydown") { return null; }
-	return (e.keyCode == 13);
-}
-
-function isEscape(e) {
-	if (e.type != "keydown") { return null; }
-	return (e.keyCode == 27);
-}
-
-function getNumber(e) {
-	if (e.type != "keypress") { return null; }
-	let num = e.charCode - "0".charCodeAt(0);
-	if (num < 0 || num > 9) { return null; }
-	return num;
-}
-
-function push(consumer) {
-	CONSUMERS.push(consumer);
-}
-
-function pop() {
-	CONSUMERS.pop();
-}
-
-function handler(e) {
-	let consumer = CONSUMERS[CONSUMERS.length-1];
-	if (!consumer) { return; }
-	consumer.handleKeyEvent(e);
-}
-
-document.addEventListener("keydown", handler);
-document.addEventListener("keypress", handler);
-
-const AI_RANGE = 7;
-const AI_IDLE = 0.4;
-const PC_SIGHT = 8;
-const LAST_LEVEL = 3;
-
-const POTION_HP = 10;
-const POTION_MANA = 10;
 
 class Princess extends Entity {
 	constructor() {
@@ -574,8 +359,437 @@ const ROOM = new Floor();
 const CORRIDOR = new Floor();
 const WALL = new Wall();
 
+const IT = ["it", "her", "him"];
+
+class Being extends Entity {
+	constructor(visual) {
+		super(visual);
+		this.inventory = new Inventory();
+
+		this.blocks = BLOCKS_MOVEMENT;
+		this._xy = null;
+		this._level = null;
+		this.attack = 0;
+		this.defense = 0;
+		this.sex = 0;
+		this.hp = this.maxhp = 10;
+		this.mana = this.maxmana = 10;
+	}
+
+	getXY() { return this._xy; }
+	getLevel() { return this._level; }
+
+	getAttack() {
+		let modifier = this.inventory.getItems().reduce((acc, item) => {
+			return acc + (item.modifies == "attack" ? item.modifier : 0);
+		}, 0);
+		return this.attack + modifier;
+	}
+
+	getDefense() {
+		let modifier = this.inventory.getItems().reduce((acc, item) => {
+			return acc + (item.modifies == "defense" ? item.modifier : 0);
+		}, 0);
+		return this.defense + modifier;
+	}
+
+	adjustStat(stat, diff) {
+		this[stat] += diff;
+		this[stat] = Math.max(this[stat], 0);
+		this[stat] = Math.min(this[stat], this[`max${stat}`]);
+		if (stat == "hp" && this[stat] == 0) { this.die(); }
+	}
+
+	die() {
+		let level = this._level;
+		let xy = this._xy;
+
+		this.moveTo(null);
+		remove(this);
+		
+		let items = this.inventory.getItems();
+		if (items.length > 0 && level.getEntity(xy) instanceof Floor) {
+			let item = items.random();
+			this.inventory.removeItem(item);
+			level.setItem(xy, item);
+		}
+	}
+
+	act() {
+		return Promise.resolve();
+	}
+
+	moveBy(dxy) {
+		return this.moveTo(this._xy.plus(dxy));
+	}
+
+	moveTo(xy, level) {
+		this._xy && this._level.setBeing(this._xy, null); // remove from old position
+
+		this._level = level || this._level;
+		this._xy = xy;
+
+		this._xy && this._level.setBeing(this._xy, this); // draw at new position
+		
+		return this;
+	}
+
+	describeIt() {
+    	return IT[this.sex];
+	}
+
+	describeVerb(verb) {
+	    return `${verb}${verb.charAt(verb.length-1) == "s" || verb == "do" ? "es" : "s"}`;
+	}
+}
+
+String.format.map.verb = "describeVerb";
+String.format.map.it = "describeIt";
+
+const AI_RANGE = 7;
+const AI_IDLE = 0.4;
+const PC_SIGHT = 8;
+const LAST_LEVEL = 3;
+
+
+
+
+const COMBAT_MODIFIER = 0.4;
+
+const ATTACK_1 = "a1";
+const ATTACK_2 = "a2";
+const MAGIC_1 = "m1";
+const MAGIC_2 = "m2";
+
+const COLORS = {
+	[ATTACK_1]: "lime",
+	[ATTACK_2]: "red",
+	[MAGIC_1]: "blue",
+	[MAGIC_2]: "yellow"
+};
+
+const SUFFIXES = {
+	[ATTACK_1]: "power",
+	[ATTACK_2]: "treachery",
+	[MAGIC_1]: "magical domination",
+	[MAGIC_2]: "magical weakness"
+};
+
+class Item extends Entity {
+	constructor(type, visual) {
+		super(visual);
+		this._type = type;
+	}
+
+	getType() { return this._type; }
+
+	pick(who) {
+		who.getLevel().setItem(who.getXY(), null);
+		add$1("You pick up %the.", this);
+	}
+}
+
+
+
+class Wearable extends Item {
+	constructor(type, visual, modifier, prefixes) {
+		super(type, visual);
+		this.modifies = (type == "weapon" ? "attack" : "defense");
+		this.modifier = modifier;
+
+		this.combat = null;
+
+		let avail = Object.keys(prefixes);
+		if (avail.length > 0 && ROT.RNG.getUniform() > 0.5) {
+			let prefix = avail.random();
+			this._visual.name = `${prefix} ${this._visual.name}`;
+			this.modifier += prefixes[prefix];
+		}
+
+		if (ROT.RNG.getUniform() < COMBAT_MODIFIER) {
+			let combat = [ATTACK_1, ATTACK_2, MAGIC_1, MAGIC_2].random();
+			this.combat = combat;
+			this._visual.name = `${this._visual.name} of ${SUFFIXES[combat]}`;
+			let color1 = ROT.Color.fromString(COLORS[combat]);
+			let color2 = ROT.Color.fromString(this._visual.fg);
+			let color3 = ROT.Color.interpolate(color1, color2, 0.5);
+			this._visual.fg = ROT.Color.toRGB(color3);
+		}
+	}
+
+	pick(who) {
+		super.pick(who);
+
+		let other = who.inventory.getItemByType(this._type);
+		if (other) {
+			who.inventory.removeItem(other);
+			who.getLevel().setItem(who.getXY(), other);
+			add$1("You drop %the.", other);
+		}
+
+		who.inventory.addItem(this);
+	}
+}
+
+const WEAPON_PREFIXES = {
+	"sharp": +1,
+	"blunt": -1,
+	"epic": 2
+};
+
+
+
+
+
+class GreatSword extends Wearable {
+	constructor() {
+		super("weapon", {ch:"(", fg:"#fff", name:"greatsword"}, 4, WEAPON_PREFIXES);
+	}
+}
+GreatSword.danger = 5;
+
+
+
+
+
+
+
+
+class Gold extends Item {
+	constructor() {
+		super("gold", {ch:"$", fg:"#fc0", name:"golden coin"});
+		this.amount = 1;
+	}
+
+	pick(who) {
+		super.pick(who);
+
+		let other = who.inventory.getItemByType(this._type);
+		if (other) {
+			other.amount++;
+		} else {
+			who.inventory.addItem(this);
+		}
+
+		publish("status-change");
+	}
+}
+
+const RATIO = 1.6;
+
+const DIRS = [
+	new XY(-1, -1),
+	new XY( 0, -1),
+	new XY( 1, -1),
+	new XY( 1,  0),
+	new XY( 1,  1),
+	new XY( 0,  1),
+	new XY(-1,  1),
+	new XY(-1,  0)
+];
+
+function wander(who) {
+	let result = Promise.resolve();
+
+	if (ROT.RNG.getUniform() < AI_IDLE) { return result; }
+
+	let level = who.getLevel();
+	let xy = who.getXY();
+
+	let dirs = DIRS.filter(dxy => {
+		let entity = level.getEntity(xy.plus(dxy));
+		return entity.blocks < BLOCKS_MOVEMENT;
+	});
+	
+	if (!dirs.length) { return result; }
+	
+	let dir = dirs.random();
+	who.moveTo(xy.plus(dir));
+	return result;
+}
+
+function getCloserToPC(who) {
+	let best = 1/0;
+	let avail = [];
+
+	DIRS.forEach(dxy => {
+		let xy = who.getXY().plus(dxy);
+		let entity = who.getLevel().getEntity(xy);
+		if (entity.blocks >= BLOCKS_MOVEMENT) { return; }
+		
+		let dist = xy.dist8(pc.getXY());
+		if (dist < best) {
+			best = dist;
+			avail = [];
+		}
+		
+		if (dist == best) { avail.push(xy); }
+	});
+	
+	if (avail.length) {
+		who.moveTo(avail.random());
+	}
+
+	return Promise.resolve();
+}
+
+function actHostile(who) {
+	let dist = who.getXY().dist8(pc.getXY());
+	if (dist == 1) {
+		add$1("%A attacks you!", who);
+		return start(who);
+	}
+
+	if (!who.ai.mobile) { return Promise.resolve(); }
+
+	if (dist <= AI_RANGE) {
+		return getCloserToPC(who);
+	} else {
+		return wander(who);
+	}
+}
+
+function actNonHostile(who) {
+	if (!who.ai.mobile) { return Promise.resolve(); }
+	return wander(who);
+}
+
+function act(who) {
+	if (who.ai.hostile) {
+		return actHostile(who);
+	} else {
+		return actNonHostile(who);
+	}
+}
+
+const HERO_RACES = ["dwarven", "halfling", "orcish", "human", "elvish", "noble"];
+const HERO_TYPES = ["knight", "adventurer", "hero", "explorer"];
+const HERO_CHATS = [
+	"Hi there, fellow adventurer!",
+	"I wonder how many tower floors are there...",
+	"Some monsters in this tower give a pretty hard fight!",
+	"Look out for potions, they might save your butt.",
+	"A sharp sword is better than a blunt one." // FIXME dalsi
+];
+
+class Autonomous extends Being {
+	constructor(visual) {
+		super(visual);
+		this.ai = {
+			hostile: true,
+			mobile: true
+		};
+		this.inventory.addItem(new Gold());
+	}
+
+	act() {
+		return act(this);
+	}
+
+	getChat() {
+		return null;
+	}
+}
+
+class Rat extends Autonomous {
+	constructor() {
+		super({ch:"r", fg:"#aaa", name:"rat"});
+		this.mana = this.maxmana = 0;
+		this.hp = this.maxhp = 1;
+	}
+}
+
+class Hero extends Autonomous {
+	constructor() {
+		let race = HERO_RACES.random();
+		let type = HERO_TYPES.random();
+		let visual = {
+			ch: type.charAt(0),
+			fg: ROT.Color.toRGB([
+				ROT.RNG.getUniformInt(100, 255),
+				ROT.RNG.getUniformInt(100, 255),
+				ROT.RNG.getUniformInt(100, 255)
+			]),
+			name: `${race} ${type}`
+		};
+		super(visual);
+		this.sex = 2;
+		this.ai.hostile = false;
+	}
+
+	getChat() {
+		if (this._level.danger == LAST_LEVEL) {
+			return "You can do whatever you want here, but beware - no kissing!";
+		} else {
+			return HERO_CHATS.random();
+		}
+	}
+}
+
+const CONSUMERS = [];
+
+const DIR_NUMPAD = [ROT.VK_NUMPAD7, ROT.VK_NUMPAD8, ROT.VK_NUMPAD9, ROT.VK_NUMPAD6, ROT.VK_NUMPAD3, ROT.VK_NUMPAD2, ROT.VK_NUMPAD1, ROT.VK_NUMPAD4];
+const DIR_CODES = [ROT.VK_HOME, ROT.VK_UP, ROT.VK_PAGE_UP, ROT.VK_RIGHT, ROT.VK_PAGE_DOWN, ROT.VK_DOWN, ROT.VK_END, ROT.VK_LEFT];
+const DIR_CHARS = ["y", "k", "u", "l", "n", "j", "b", "h"];
+
+function getDirection(e) {
+	if (e.type == "keypress") {
+		let ch = String.fromCharCode(e.charCode).toLowerCase();
+		let index = DIR_CHARS.indexOf(ch);
+		if (index in DIRS) { return DIRS[index]; }
+	}
+	if (e.type == "keydown") {
+		let index = DIR_CODES.indexOf(e.keyCode);
+		if (index in DIRS) { return DIRS[index]; }
+
+		index = DIR_NUMPAD.indexOf(e.keyCode);
+		if (index in DIRS) { return DIRS[index]; }
+	}
+	return null;
+}
+
+function hasModifier(e) {
+	return (e.ctrlKey || e.shiftKey || e.altKey || e.metaKey);
+}
+
+function isEnter(e) {
+	if (e.type != "keydown") { return null; }
+	return (e.keyCode == 13);
+}
+
+function isEscape(e) {
+	if (e.type != "keydown") { return null; }
+	return (e.keyCode == 27);
+}
+
+function getNumber(e) {
+	if (e.type != "keypress") { return null; }
+	let num = e.charCode - "0".charCodeAt(0);
+	if (num < 0 || num > 9) { return null; }
+	return num;
+}
+
+function push(consumer) {
+	CONSUMERS.push(consumer);
+}
+
+function pop() {
+	CONSUMERS.pop();
+}
+
+function handler(e) {
+	let consumer = CONSUMERS[CONSUMERS.length-1];
+	if (!consumer) { return; }
+	consumer.handleKeyEvent(e);
+}
+
+document.addEventListener("keydown", handler);
+document.addEventListener("keypress", handler);
+
 let resolve$1 = null;
 let count = 0;
+
+const SPACE = String.fromCharCode(160, 160);
 
 function end$1(value) {
 	pop();
@@ -583,21 +797,22 @@ function end$1(value) {
 }
 
 function handleKeyEvent$1(e) {
-	if (isEscape(e)) { return end$1(null); }
+	if (isEscape(e)) { return end$1(-1); }
 
 	let number = getNumber(e);
-	if (!number) { return end$1(null); }
+	if (number === null) { return; }
 
-	if (number > 0 && number <= count) { end$1(number); }
+	if (number >= 0 && number <= count) { end$1(number-1); }
 }
 
 function choice(options) {
 	count = options.length;
 
 	options.forEach((o, index) => {
-		add$1(`  {#fff}${index+1}{} ${o}\n`);
+		add$1(`\n${SPACE}{#fff}${index+1}{} ${o}`);
 	});
-	add$1(`{#fff}0{} or {#fff}Escape{} to abort`);
+	add$1(`\n${SPACE}{#fff}0{} or {#fff}Escape{} to abort`);
+	pause();
 
 	push({handleKeyEvent: handleKeyEvent$1});
 	return new Promise(r => resolve$1 = r);
@@ -612,9 +827,8 @@ let COMBAT_OPTIONS = {
 
 const TUTORIAL = {
 	staircase: false,
-	pick: false,
-	door: false,
-	enemy: false
+	item: false,
+	door: false
 };
 
 class PC extends Being {
@@ -622,6 +836,7 @@ class PC extends Being {
 		super({ch:"@", fg:"#fff", name:"you"});
 		this._resolve = null; // end turn
 		this.fov = {};
+		this.inventory.addItem(new GreatSword());
 
 		subscribe("topology-change", this);
 	}
@@ -632,7 +847,12 @@ class PC extends Being {
 	describeVerb(verb) { return verb; }
 
 	getCombatOption() {
-		return ROT.RNG.getWeightedValue(COMBAT_OPTIONS);
+		let options = Object.assign({}, COMBAT_OPTIONS);
+		this.inventory.getItems().forEach(item => {
+			if (item.combat) { options[item.combat] += 2; }
+		});
+		console.log(options);
+		return ROT.RNG.getWeightedValue(options);
 	}
 
 	act() {
@@ -691,6 +911,10 @@ class PC extends Being {
 		let item = this._level.getItem(this._xy);
 		if (item) {
 			add$1("%A is lying here.", item);
+			if (!TUTORIAL.item) {
+				add$1("To pick it up, press {#fff}Enter{}.");
+				TUTORIAL.item = true;
+			}
 			return;
 		}
 
@@ -733,25 +957,62 @@ class PC extends Being {
 				add$1("You open the door.");
 				entity.open();
 			}
-			return this._resolve(); // successful interaction
+			return this._resolve(); // successful door interaction
 		}
 
 		add$1("You see %a.", entity);
 
-		if (entity instanceof Being) {
-			choice(["aaaa", "bbbb"]);
-			return;			
+		if (entity instanceof Being) { this._interactWithBeing(entity); }
+	}
+
+	_chat(being) {
+		let text = being.getChat();
+		if (text) {
+			add$1(`%The says, \"${text}\".`, being);
+		} else {
+			add$1("%The does not say anything.", being);
+		}
+	}
+
+	_attack(being) {
+		add$1("You attack %the.", being);
+		start(being).then(() => this._resolve());
+	}
+
+	_kiss(being) {
+		add$1("%The does not seem to be amused!", being);
+		this._resolve(); // successful kiss interaction
+	}
+
+	_interactWithBeing(being) {
+		let callbacks = [];
+		let options = [];
+
+		callbacks.push(() => this._kiss(being));
+		options.push("Kiss %it gently".format(being));
+
+		callbacks.push(() => this._chat(being));
+		options.push("Talk to %it".format(being));
+
+		if (being instanceof Hero) {
+		} else {
+			callbacks.push(() => this._attack(being));
+			options.push("Attack %it".format(being));
 		}
 
-		if (entity instanceof Item) {
-			// fixme tutorial
-			add$1("To pick it up, move there and press {#fff}Enter{}.");
-			return;
-		}
+		choice(options).then(index => {
+			if (index == -1) { 
+				add$1("You decide to do nothing.");
+				return;
+			}
+			callbacks[index]();
+		});
+
 	}
 
 	_move(xy) {
 		let entity = this._level.getEntity(xy);
+
 		if (entity.blocks >= BLOCKS_MOVEMENT) {
 			add$1("You bump into %a.", entity);
 			if (entity instanceof Door && !TUTORIAL.door) {
@@ -921,13 +1182,6 @@ const CELL = 30;
 const CTX = document.createElement("canvas").getContext("2d");
 const LEGEND = document.createElement("ul");
 
-const COLORS = {
-	[ATTACK_1]: "lime",
-	[ATTACK_2]: "red",
-	[MAGIC_1]: "blue",
-	[MAGIC_2]: "yellow"
-};
-
 const LABELS = {
 	[ATTACK_1]: "Attack (you)",
 	[ATTACK_2]: "Attack (enemy)",
@@ -1088,6 +1342,7 @@ let level = null;
 let options = {
 	width: 1,
 	height: 1,
+	spacing: 1.1,
 	fontSize: FONT_BASE,
 	fontFamily: "metrickal, monospace"
 };
@@ -1229,6 +1484,7 @@ function end() {
 }
 
 function doDamage(attacker, defender, options = {}) {
+	console.log("combat", options);
 	if (options.isMagic) { // check mana
 		if (attacker.mana < options.power) {
 			add$1("%The %{verb,do} not have enough mana to attack.", attacker, attacker);
@@ -1240,6 +1496,7 @@ function doDamage(attacker, defender, options = {}) {
 	let attack = attacker.getAttack();
 	let defense = defender.getDefense();
 	let damage = attack + options.power - defense;
+	console.log("attack %s, defense %s, damage %s", attack, defense, damage);
 
 	if (damage <= 0) {
 		add$1("%The %{verb,fail} to damage %the.", attacker, attacker, defender);
@@ -1559,7 +1816,12 @@ const FACTS = [
 	"The tower is procedurally generated. Try resizing this page!",
 	"You can reload this page to get another Fun Fact",
 	"The original Sleeping Beauty fairy tale was written by Charles Perrault",
-	"This game is best played with a maximized browser window"
+	"This game is best played with a maximized browser window",
+	"This game can be won!",
+	"This game can be lost!",
+	"This game features permadeath and procedural generation",
+	"This game uses the awesome 'Metrickal' font face"
+	// fixme dalsi
 ];
 
 let node$6 = document.createElement("div");
@@ -1605,7 +1867,6 @@ function start$1(n) {
 	return new Promise(r => resolve$2 = r);
 }
 
-// fixme ukazovat level
 let node$7;
 
 function init$5(n) {
@@ -1659,7 +1920,14 @@ function buildItems() {
 	let items = pc.inventory.getItems().filter(i => i.getType() != "gold");
 	items.forEach(item => {
 		let node = document.createElement("li");
-		node.innerHTML = item.toString();
+		let str = item.toString();
+		if (item.modifier) {
+			str = `${str} (${item.modifier > 0 ? "+" : ""}${item.modifier})`;
+		}
+		if (item.combat) {
+			str = `${str} (+<strong style="color:${COLORS[item.combat]}">#</strong>)`;
+		}
+		node.innerHTML = str;
 		frag.appendChild(node);
 	});
 	return frag;
@@ -1823,207 +2091,6 @@ class Level {
 	}
 }
 
-class Gold extends Item {
-	constructor() {
-		super("gold", {ch:"$", fg:"#fc0", name:"golden coin"});
-		this.amount = 1;
-	}
-
-	pick(who) {
-		super.pick(who);
-
-		let other = who.inventory.getItemByType(this._type);
-		if (other) {
-			other.amount++;
-		} else {
-			who.inventory.addItem(this);
-		}
-
-		publish("status-change");
-	}
-}
-
-
-
-class Axe extends Wearable {
-	constructor() {
-		super("weapon", {ch:")", fg:"#eef", name:"axe"});
-	}
-}
-
-class Shield extends Wearable {
-	constructor() {
-		super("shield", {ch:"]", fg:"#eef", name:"shield"});
-	}
-}
-
-class HealthPotion extends Drinkable {
-	constructor() {
-		super(POTION_HP, {ch:"!", fg:"#e00", name:"health potion"});
-	}
-
-	pick(who) {
-		super.pick(who);
-		if (who.maxhp == who.hp) {
-			add$1("Nothing happens.");
-		} else if (who.maxhp - who.hp <= this._strength) {
-			add$1("You are completely healed.");
-		} else {
-			add$1("Some of your health is restored.");
-		}
-		who.adjustStat("hp", this._strength);
-	}
-}
-
-class ManaPotion extends Drinkable {
-	constructor() {
-		super(POTION_MANA, {ch:"!", fg:"#00e", name:"mana potion"});
-	}
-
-	pick(who) {
-		super.pick(who);
-		if (who.maxmana == who.mana) {
-			add$1("Nothing happens.");
-		} else if (who.maxmana - who.mana <= this._strength) {
-			add$1("Your mana is completely refilled.");
-		} else {
-			add$1("Some of your mana is refilled.");
-		}
-		who.adjustStat("mana", this._strength);
-	}
-}
-
-function wander(who) {
-	let result = Promise.resolve();
-
-	if (ROT.RNG.getUniform() < AI_IDLE) { return result; }
-
-	let level = who.getLevel();
-	let xy = who.getXY();
-
-	let dirs = DIRS.filter(dxy => {
-		let entity = level.getEntity(xy.plus(dxy));
-		return entity.blocks < BLOCKS_MOVEMENT;
-	});
-	
-	if (!dirs.length) { return result; }
-	
-	let dir = dirs.random();
-	who.moveTo(xy.plus(dir));
-	return result;
-}
-
-function getCloserToPC(who) {
-	let best = 1/0;
-	let avail = [];
-
-	DIRS.forEach(dxy => {
-		let xy = who.getXY().plus(dxy);
-		let entity = who.getLevel().getEntity(xy);
-		if (entity.blocks >= BLOCKS_MOVEMENT) { return; }
-		
-		let dist = xy.dist8(pc.getXY());
-		if (dist < best) {
-			best = dist;
-			avail = [];
-		}
-		
-		if (dist == best) { avail.push(xy); }
-	});
-	
-	if (avail.length) {
-		who.moveTo(avail.random());
-	}
-
-	return Promise.resolve();
-}
-
-function actHostile(who) {
-	let dist = who.getXY().dist8(pc.getXY());
-	if (dist == 1) {
-		add$1("%A attacks you!", who);
-		return start(who);
-	}
-
-	if (!who.ai.mobile) { return Promise.resolve(); }
-
-	if (dist <= AI_RANGE) {
-		return getCloserToPC(who);
-	} else {
-		return wander(who);
-	}
-}
-
-function actNonHostile(who) {
-	if (!who.ai.mobile) { return Promise.resolve(); }
-	return wander(who);
-}
-
-function act(who) {
-	if (who.ai.hostile) {
-		return actHostile(who);
-	} else {
-		return actNonHostile(who);
-	}
-}
-
-const HERO_RACES = ["dwarven", "halfling", "orcish", "human", "elvish", "noble"];
-const HERO_TYPES = ["knight", "adventurer", "hero", "explorer"];
-const HERO_CHATS = [
-	"Hi there, fellow adventurer!",
-	"I wonder how many tower floors are there...",
-	"Some monsters in this tower give a pretty hard fight!",
-	"Look out for potions, they might save your butt.",
-	"A sharp sword is better than a blunt one." // FIXME dalsi
-];
-
-class Autonomous extends Being {
-	constructor(visual) {
-		super(visual);
-		this.ai = {
-			hostile: true,
-			mobile: true
-		};
-		this.inventory.addItem(new Gold());
-	}
-
-	act() {
-		return act(this);
-	}
-}
-
-class Rat extends Autonomous {
-	constructor() {
-		super({ch:"r", fg:"gray", name:"rat"});
-	}
-}
-
-class Hero extends Autonomous {
-	constructor() {
-		let race = HERO_RACES.random();
-		let type = HERO_TYPES.random();
-		let visual = {
-			ch: type.charAt(0),
-			fg: ROT.Color.toRGB([
-				ROT.RNG.getUniformInt(100, 255),
-				ROT.RNG.getUniformInt(100, 255),
-				ROT.RNG.getUniformInt(100, 255)
-			]),
-			name: `${race} ${type}`
-		};
-		super(visual);
-		this.ai.hostile = false;
-	}
-
-	getChat() {
-		if (this._level.danger == LAST_LEVEL) {
-			return "You can do whatever you want here, but beware - no kissing!";
-		} else {
-			return HERO_CHATS.random();
-		}
-	}
-}
-
 // FIXME POLYFILL array.prototype.includes
 
 const DIST = 10;
@@ -2146,18 +2213,22 @@ function decorateRegular(level) {
 	let r2 = furthestRoom(level.rooms, r1);
 
 	level.start = r1.center;
-//	level.end = r2.center;
-	level.end = level.start.plus({x:1,y:0});
+	level.end = r2.center;
+	level.end = level.start.plus({x:1, y:0});
 
-	level.rooms.forEach(room => level.carveDoors(room));	
+	level.rooms.forEach(room => level.carveDoors(room));
+/*
+	let xy = new XY();
+	for (xy.x = r1.lt.x; xy.x <= r1.rb.x; xy.x++) {
+		for (xy.y = r1.lt.y; xy.y <= r1.rb.y; xy.y++) {
+			let item = factory.getItem(2);
+			level.setItem(xy, item);
+		}
+	}
+*/
 
 	let rat = new Rat();
-	rat.moveTo(level.start.plus(new XY(3, 0)), level);
-//	level.setItem(level.start.plus(new XY(1, 0)), new Sword());
-	level.setItem(level.start.plus(new XY(2, 0)), new Axe());
-	level.setItem(level.start.plus(new XY(3, 0)), new Shield());
-	level.setItem(level.start.plus(new XY(0, 1)), new HealthPotion());
-	level.setItem(level.start.plus(new XY(0, 2)), new ManaPotion());
+	rat.moveTo(level.start.plus({x:3,y:0}), level);	
 
 	/* staircase up, all non-last levels */
 	let up = new Staircase(true, staircaseCallback(level.danger+1, true));

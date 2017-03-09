@@ -1,6 +1,7 @@
 import XY from "util/xy.js";
 import { generate } from "./generator.js";
 import { dangerToRadius } from "./level.js";
+import * as factory from "util/factory.js";
 import { Rat, Hero } from "being/beings.js";
 import { Gold, Sword, Axe, Shield, HealthPotion, ManaPotion } from "item/items.js";
 
@@ -55,18 +56,22 @@ function decorateRegular(level) {
 	let r2 = room.furthestRoom(level.rooms, r1);
 
 	level.start = r1.center;
-//	level.end = r2.center;
-	level.end = level.start.plus({x:1,y:0});
+	level.end = r2.center;
+	level.end = level.start.plus({x:1, y:0});
 
-	level.rooms.forEach(room => level.carveDoors(room));	
+	level.rooms.forEach(room => level.carveDoors(room));
+/*
+	let xy = new XY();
+	for (xy.x = r1.lt.x; xy.x <= r1.rb.x; xy.x++) {
+		for (xy.y = r1.lt.y; xy.y <= r1.rb.y; xy.y++) {
+			let item = factory.getItem(2);
+			level.setItem(xy, item);
+		}
+	}
+*/
 
 	let rat = new Rat();
-	rat.moveTo(level.start.plus(new XY(3, 0)), level);
-//	level.setItem(level.start.plus(new XY(1, 0)), new Sword());
-	level.setItem(level.start.plus(new XY(2, 0)), new Axe());
-	level.setItem(level.start.plus(new XY(3, 0)), new Shield());
-	level.setItem(level.start.plus(new XY(0, 1)), new HealthPotion());
-	level.setItem(level.start.plus(new XY(0, 2)), new ManaPotion());
+	rat.moveTo(level.start.plus({x:3,y:0}), level);	
 
 	/* staircase up, all non-last levels */
 	let up = new cells.Staircase(true, staircaseCallback(level.danger+1, true));

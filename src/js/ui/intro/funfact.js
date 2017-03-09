@@ -4,7 +4,12 @@ const FACTS = [
 	"The tower is procedurally generated. Try resizing this page!",
 	"You can reload this page to get another Fun Fact",
 	"The original Sleeping Beauty fairy tale was written by Charles Perrault",
-	"This game is best played with a maximized browser window"
+	"This game is best played with a maximized browser window",
+	"This game can be won!",
+	"This game can be lost!",
+	"This game features permadeath and procedural generation",
+	"This game uses the awesome 'Metrickal' font face"
+	// fixme dalsi
 ];
 
 let node = document.createElement("div");

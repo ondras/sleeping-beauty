@@ -5,3 +5,5 @@ export const LAST_LEVEL = 3;
 
 export const POTION_HP = 10;
 export const POTION_MANA = 10;
+
+export const COMBAT_MODIFIER = 0.4;

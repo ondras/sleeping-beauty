@@ -1,5 +1,6 @@
 import XY from "util/xy.js";
 import Being from "./being.js";
+import {Hero} from "./beings.js";
 import Item from "item/item.js";
 import { BLOCKS_MOVEMENT, BLOCKS_LIGHT, BLOCKS_NONE } from "entity.js";
 import { ATTACK_1, ATTACK_2, MAGIC_1, MAGIC_2 } from "combat/types.js";
@@ -22,9 +23,8 @@ let COMBAT_OPTIONS = {
 
 const TUTORIAL = {
 	staircase: false,
-	pick: false,
-	door: false,
-	enemy: false
+	item: false,
+	door: false
 }
 
 class PC extends Being {
@@ -42,7 +42,11 @@ class PC extends Being {
 	describeVerb(verb) { return verb; }
 
 	getCombatOption() {
-		return ROT.RNG.getWeightedValue(COMBAT_OPTIONS);
+		let options = Object.assign({}, COMBAT_OPTIONS);
+		this.inventory.getItems().forEach(item => {
+			if (item.combat) { options[item.combat] += 2; }
+		});
+		return ROT.RNG.getWeightedValue(options);
 	}
 
 	act() {
@@ -101,6 +105,10 @@ class PC extends Being {
 		let item = this._level.getItem(this._xy);
 		if (item) {
 			log.add("%A is lying here.", item);
+			if (!TUTORIAL.item) {
+				log.add("To pick it up, press {#fff}Enter{}.");
+				TUTORIAL.item = true;
+			}
 			return;
 		}
 
@@ -143,25 +151,62 @@ class PC extends Being {
 				log.add("You open the door.");
 				entity.open();
 			}
-			return this._resolve(); // successful interaction
+			return this._resolve(); // successful door interaction
 		}
 
 		log.add("You see %a.", entity);
 
-		if (entity instanceof Being) {
-			choice(["aaaa", "bbbb"]);
-			return;			
+		if (entity instanceof Being) { this._interactWithBeing(entity); }
+	}
+
+	_chat(being) {
+		let text = being.getChat();
+		if (text) {
+			log.add(`%The says, \"${text}\".`, being);
+		} else {
+			log.add("%The does not say anything.", being);
+		}
+	}
+
+	_attack(being) {
+		log.add("You attack %the.", being);
+		combat.start(being).then(() => this._resolve());
+	}
+
+	_kiss(being) {
+		log.add("%The does not seem to be amused!", being);
+		this._resolve(); // successful kiss interaction
+	}
+
+	_interactWithBeing(being) {
+		let callbacks = [];
+		let options = [];
+
+		callbacks.push(() => this._kiss(being));
+		options.push("Kiss %it gently".format(being))
+
+		callbacks.push(() => this._chat(being));
+		options.push("Talk to %it".format(being))
+
+		if (being instanceof Hero) {
+		} else {
+			callbacks.push(() => this._attack(being));
+			options.push("Attack %it".format(being))
 		}
 
-		if (entity instanceof Item) {
-			// fixme tutorial
-			log.add("To pick it up, move there and press {#fff}Enter{}.");
-			return;
-		}
+		choice(options).then(index => {
+			if (index == -1) { 
+				log.add("You decide to do nothing.");
+				return;
+			}
+			callbacks[index]();
+		});
+
 	}
 
 	_move(xy) {
 		let entity = this._level.getEntity(xy);
+
 		if (entity.blocks >= BLOCKS_MOVEMENT) {
 			log.add("You bump into %a.", entity);
 			if (entity instanceof cells.Door && !TUTORIAL.door) {

@@ -10,6 +10,7 @@ let level = null;
 let options = {
 	width: 1,
 	height: 1,
+	spacing: 1.1,
 	fontSize: FONT_BASE,
 	fontFamily: "metrickal, monospace"
 }
