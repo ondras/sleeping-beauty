@@ -18,7 +18,7 @@ class Autonomous extends Being {
 	constructor(visual) {
 		super(visual);
 		this.ai = {
-			hostile: true,
+			hostile: ROT.RNG.getUniform() < rules.HOSTILE_CHANCE,
 			mobile: true
 		}
 		this.inventory.addItem(new items.Gold());
@@ -138,6 +138,16 @@ export class Minotaur extends Autonomous {
 	}
 }
 Minotaur.danger = 8;
+
+export class Tree extends Autonomous {
+	constructor() {
+		super({ch:"T", fg:"#3c3", name:"animated tree"});
+		this.hp = this.maxhp = 30;
+		this.mana = this.maxmana = 30;
+		this.ai.mobile = false;
+	}
+}
+Tree.danger = 8;
 
 export class Hero extends Autonomous {
 	constructor() {

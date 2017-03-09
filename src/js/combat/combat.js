@@ -27,7 +27,7 @@ function end() {
 }
 
 function doDamage(attacker, defender, options = {}) {
-	console.log("combat", options);
+//	console.log("combat", options);
 	if (options.isMagic) { // check mana
 		if (attacker.mana < options.power) {
 			log.add("%The %{verb,do} not have enough mana to attack.", attacker, attacker);
@@ -39,7 +39,7 @@ function doDamage(attacker, defender, options = {}) {
 	let attack = attacker.getAttack();
 	let defense = defender.getDefense();
 	let damage = attack + options.power - defense;
-	console.log("attack %s, defense %s, damage %s", attack, defense, damage);
+//	console.log("attack %s, defense %s, damage %s", attack, defense, damage);
 	damage = Math.max(1, damage);
 
 	let verb = (options.isMagic ? "%{verb,cast} a spell on %the" : "%{verb,hit} %the").format(attacker, defender);

@@ -64,11 +64,11 @@ function generateNextRoom(level) {
 
 		if (oldRoom) { connect(level, oldRoom, newRoom); }
 
-		console.log("room #%s after %s failures", level.rooms.length, failed);
+//		console.log("room #%s after %s failures", level.rooms.length, failed);
 		return true;
 	}
 
-	console.log("failed to add after %s failures", failed);
+//	console.log("failed to add after %s failures", failed);
 	return false;
 }
 
