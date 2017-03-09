@@ -95,6 +95,20 @@ export class HealthPotion extends Drinkable {
 	}
 }
 
+export class Lutefisk extends Drinkable {
+	constructor() {
+		super(0, {ch:"%", fg:"#ff0", name:"lutefisk"});
+		this._visual.name = "lutefisk"; // no modifiers, sry
+	}
+
+	pick(who) {
+		who.getLevel().setItem(who.getXY(), null);
+		log.add("You eat %the. You feel weird.", this);
+		who.adjustStat("hp", who.maxhp);
+		who.adjustStat("mana", -who.maxmana);
+	}
+}
+
 export class ManaPotion extends Drinkable {
 	constructor() {
 		super(rules.POTION_MANA, {ch:"!", fg:"#00e", name:"mana potion"});

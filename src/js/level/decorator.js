@@ -89,6 +89,7 @@ function decorateFull(level) {
 	let features = {
 		item: 4,
 		potion: 3,
+		lutefisk: 0.1,
 		gold: 2,
 		enemy: 4,
 		hero: 1,
@@ -110,6 +111,7 @@ function decorateFull(level) {
 			switch (feature) {
 				case "item": level.setItem(xy, factory.getItem(level.danger)); break;
 				case "potion": level.setItem(xy, factory.getPotion()); break;
+				case "lutefisk": level.setItem(xy, new items.Lutefisk()); break;
 				case "gold": level.setItem(xy, new items.Gold()); break;
 				case "enemy": factory.getBeing(level.danger).moveTo(xy, level); break;
 				case "hero": new beings.Hero().moveTo(xy, level); break;

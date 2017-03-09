@@ -11,6 +11,7 @@ const HERO_CHATS = [
 	"I wonder how many tower floors are there...",
 	"Some monsters in this tower give a pretty hard fight!",
 	"Look out for potions, they might save your butt.",
+	"So, you are also looking for that sleeping princess?",
 	"A sharp sword is better than a blunt one." // FIXME dalsi
 ];
 

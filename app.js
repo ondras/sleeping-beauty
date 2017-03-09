@@ -1,3 +1,393 @@
+// Production steps of ECMA-262, Edition 6, 22.1.2.1
+// Reference: https://people.mozilla.org/~jorendorff/es6-draft.html#sec-array.from
+if (!Array.from) {
+  Array.from = (function () {
+    var toStr = Object.prototype.toString;
+    var isCallable = function (fn) {
+      return typeof fn === 'function' || toStr.call(fn) === '[object Function]';
+    };
+    var toInteger = function (value) {
+      var number = Number(value);
+      if (isNaN(number)) { return 0; }
+      if (number === 0 || !isFinite(number)) { return number; }
+      return (number > 0 ? 1 : -1) * Math.floor(Math.abs(number));
+    };
+    var maxSafeInteger = Math.pow(2, 53) - 1;
+    var toLength = function (value) {
+      var len = toInteger(value);
+      return Math.min(Math.max(len, 0), maxSafeInteger);
+    };
+
+    // The length property of the from method is 1.
+    return function from(arrayLike/*, mapFn, thisArg */) {
+      // 1. Let C be the this value.
+      var C = this;
+
+      // 2. Let items be ToObject(arrayLike).
+      var items = Object(arrayLike);
+
+      // 3. ReturnIfAbrupt(items).
+      if (arrayLike == null) {
+        throw new TypeError("Array.from requires an array-like object - not null or undefined");
+      }
+
+      // 4. If mapfn is undefined, then let mapping be false.
+      var mapFn = arguments.length > 1 ? arguments[1] : void undefined;
+      var T;
+      if (typeof mapFn !== 'undefined') {
+        // 5. else      
+        // 5. a If IsCallable(mapfn) is false, throw a TypeError exception.
+        if (!isCallable(mapFn)) {
+          throw new TypeError('Array.from: when provided, the second argument must be a function');
+        }
+
+        // 5. b. If thisArg was supplied, let T be thisArg; else let T be undefined.
+        if (arguments.length > 2) {
+          T = arguments[2];
+        }
+      }
+
+      // 10. Let lenValue be Get(items, "length").
+      // 11. Let len be ToLength(lenValue).
+      var len = toLength(items.length);
+
+      // 13. If IsConstructor(C) is true, then
+      // 13. a. Let A be the result of calling the [[Construct]] internal method of C with an argument list containing the single item len.
+      // 14. a. Else, Let A be ArrayCreate(len).
+      var A = isCallable(C) ? Object(new C(len)) : new Array(len);
+
+      // 16. Let k be 0.
+      var k = 0;
+      // 17. Repeat, while k < len… (also steps a - h)
+      var kValue;
+      while (k < len) {
+        kValue = items[k];
+        if (mapFn) {
+          A[k] = typeof T === 'undefined' ? mapFn(kValue, k) : mapFn.call(T, kValue, k);
+        } else {
+          A[k] = kValue;
+        }
+        k += 1;
+      }
+      // 18. Let putStatus be Put(A, "length", len, true).
+      A.length = len;
+      // 20. Return A.
+      return A;
+    };
+  }());
+}
+if (!Array.prototype.includes) {
+    Array.prototype.includes = function(searchElement /*, fromIndex*/ ) {
+        "use strict";
+        var O = Object(this);
+        var len = parseInt(O.length, 10) || 0;
+        if (len === 0) { return false; }
+        var n = parseInt(arguments[1], 10) || 0;
+        var k;
+        if (n >= 0) {
+            k = n;
+        } else {
+            k = len + n;
+            if (k < 0) {k = 0;}
+        }
+        var currentElement;
+        while (k < len) {
+            currentElement = O[k];
+            if (searchElement === currentElement) { // FIXME NaN !== NaN
+                return true;
+            }
+            k++;
+        }
+        return false;
+    };
+}
+if (!Object.assign) {
+	Object.defineProperty(Object, "assign", {
+		enumerable: false,
+		configurable: true,
+		writable: true,
+		value: function(target) {
+			if (target === undefined || target === null) {
+				throw new TypeError("Cannot convert first argument to object");
+			}
+
+			var to = Object(target);
+			for (var i = 1; i < arguments.length; i++) {
+				var nextSource = arguments[i];
+				if (nextSource === undefined || nextSource === null) {
+					continue;
+				}
+				nextSource = Object(nextSource);
+
+				var keysArray = Object.keys(Object(nextSource));
+				for (var nextIndex = 0, len = keysArray.length; nextIndex < len; nextIndex++) {
+					var nextKey = keysArray[nextIndex];
+					var desc = Object.getOwnPropertyDescriptor(nextSource, nextKey);
+					if (desc !== undefined && desc.enumerable) {
+						to[nextKey] = nextSource[nextKey];
+					}
+				}
+			}
+			return to;
+		}
+	});
+}
+/*
+	Any copyright is dedicated to the Public Domain.
+	http://creativecommons.org/publicdomain/zero/1.0/
+*/
+
+(function (root, factory) {
+	if (typeof define === "function" && define.amd) {
+		define([ "exports" ], factory);
+	} else if (typeof exports === "object") {
+		factory(exports);
+	} else {
+		factory(root);
+	}
+}(this, function (exports) {
+	if (exports.Promise) { return; }
+
+	/**
+	 * @class A promise - value to be resolved in the future.
+	 * Implements the "Promises/A+ 1.1" specification.
+	 * @param {function} [resolver]
+	 */
+	var Promise = function(resolver) {
+		this._state = 0; /* 0 = pending, 1 = fulfilled, 2 = rejected */
+		this._value = null; /* fulfillment / rejection value */
+		this._timeout = null;
+
+		this._cb = {
+			fulfilled: [],
+			rejected: []
+		}
+
+		this._thenPromises = []; /* promises returned by then() */
+
+		if (resolver) { this._invokeResolver(resolver); }
+	}
+
+	Promise.resolve = function(value) {
+		return new this(function(resolve, reject) {
+			resolve(value);
+		});
+	}
+
+	Promise.reject = function(reason) {
+		return new this(function(resolve, reject) {
+			reject(reason);
+		});
+	}
+
+	/**
+	 * Wait for all these promises to complete. One failed => this fails too.
+	 */
+	Promise.all = Promise.when = function(all) {
+		return new this(function(resolve, reject) {
+			var counter = 0;
+			var results = [];
+
+			all.forEach(function(promise, index) {
+				counter++;
+				promise.then(function(result) {
+					results[index] = result;
+					counter--;
+					if (!counter) { resolve(results); }
+				}, function(reason) {
+					counter = 1/0;
+					reject(reason);
+				});
+			});
+		});
+	}
+
+	Promise.race = function(all) {
+		return new this(function(resolve, reject) {
+			all.forEach(function(promise) {
+				promise.then(resolve, reject);
+			});
+		});
+	}
+
+	/**
+	 * @param {function} onFulfilled To be called once this promise gets fulfilled
+	 * @param {function} onRejected To be called once this promise gets rejected
+	 * @returns {Promise}
+	 */
+	Promise.prototype.then = function(onFulfilled, onRejected) {
+		this._cb.fulfilled.push(onFulfilled);
+		this._cb.rejected.push(onRejected);
+
+		var thenPromise = new Promise();
+
+		this._thenPromises.push(thenPromise);
+
+		if (this._state > 0) { this._schedule(); }
+
+		/* 2.2.7. then must return a promise. */
+		return thenPromise;
+	}
+
+	/**
+	 * Fulfill this promise with a given value
+	 * @param {any} value
+	 */
+	Promise.prototype.fulfill = function(value) {
+		if (this._state != 0) { return this; }
+
+		this._state = 1;
+		this._value = value;
+
+		if (this._thenPromises.length) { this._schedule(); }
+
+		return this;
+	}
+
+	/**
+	 * Reject this promise with a given value
+	 * @param {any} value
+	 */
+	Promise.prototype.reject = function(value) {
+		if (this._state != 0) { return this; }
+
+		this._state = 2;
+		this._value = value;
+
+		if (this._thenPromises.length) { this._schedule(); }
+
+		return this;
+	}
+
+	Promise.prototype.resolve = function(x) {
+		/* 2.3.1. If promise and x refer to the same object, reject promise with a TypeError as the reason. */
+		if (x == this) {
+			this.reject(new TypeError("Promise resolved by its own instance"));
+			return;
+		}
+
+		/* 2.3.2. If x is a promise, adopt its state */
+		if (x instanceof this.constructor) {
+			x.chain(this);
+			return;
+		}
+
+		/* 2.3.3. Otherwise, if x is an object or function,  */
+		if (x !== null && (typeof(x) == "object" || typeof(x) == "function")) {
+			try {
+				var then = x.then;
+			} catch (e) {
+				/* 2.3.3.2. If retrieving the property x.then results in a thrown exception e, reject promise with e as the reason. */
+				this.reject(e);
+				return;
+			}
+
+			if (typeof(then) == "function") {
+				/* 2.3.3.3. If then is a function, call it */
+				var called = false;
+				var resolvePromise = function(y) {
+					/* 2.3.3.3.1. If/when resolvePromise is called with a value y, run [[Resolve]](promise, y). */
+					if (called) { return; }
+					called = true;
+					this.resolve(y);
+				}
+				var rejectPromise = function(r) {
+					/* 2.3.3.3.2. If/when rejectPromise is called with a reason r, reject promise with r. */
+					if (called) { return; }
+					called = true;
+					this.reject(r);
+				}
+
+				try {
+					then.call(x, resolvePromise.bind(this), rejectPromise.bind(this));
+				} catch (e) { /* 2.3.3.3.4. If calling then throws an exception e, */
+					/* 2.3.3.3.4.1. If resolvePromise or rejectPromise have been called, ignore it. */
+					if (called) { return; }
+					/* 2.3.3.3.4.2. Otherwise, reject promise with e as the reason. */
+					this.reject(e);
+				}
+			} else {
+				/* 2.3.3.4 If then is not a function, fulfill promise with x. */
+				this.fulfill(x);
+			}
+			return;
+		}
+
+		/* 2.3.4. If x is not an object or function, fulfill promise with x. */
+		this.fulfill(x);
+	}
+
+	/**
+	 * Pass this promise's resolved value to another promise
+	 * @param {Promise} promise
+	 */
+	Promise.prototype.chain = function(promise) {
+		var resolve = function(value) {
+			promise.resolve(value);
+		}
+		var reject = function(value) {
+			promise.reject(value);
+		}
+		return this.then(resolve, reject);
+	}
+
+	/**
+	 * @param {function} onRejected To be called once this promise gets rejected
+	 * @returns {Promise}
+	 */
+	Promise.prototype["catch"] = function(onRejected) {
+		return this.then(null, onRejected);
+	}
+
+	Promise.prototype._schedule = function() {
+		if (this._timeout) { return; } /* resolution already scheduled */
+		this._timeout = setTimeout(this._processQueue.bind(this), 0);
+	}
+
+	Promise.prototype._processQueue = function() {
+		this._timeout = null;
+
+		while (this._thenPromises.length) {
+			var onFulfilled = this._cb.fulfilled.shift();
+			var onRejected = this._cb.rejected.shift();
+			this._executeCallback(this._state == 1 ? onFulfilled : onRejected);
+		}
+	}
+
+	Promise.prototype._executeCallback = function(cb) {
+		var thenPromise = this._thenPromises.shift();
+
+		if (typeof(cb) != "function") {
+			if (this._state == 1) {
+				/* 2.2.7.3. If onFulfilled is not a function and promise1 is fulfilled, promise2 must be fulfilled with the same value. */
+				thenPromise.fulfill(this._value);
+			} else {
+				/* 2.2.7.4. If onRejected is not a function and promise1 is rejected, promise2 must be rejected with the same reason. */
+				thenPromise.reject(this._value);
+			}
+			return;
+		}
+
+		try {
+			var x = cb(this._value);
+			/* 2.2.7.1. If either onFulfilled or onRejected returns a value x, run the Promise Resolution Procedure [[Resolve]](promise2, x). */
+			thenPromise.resolve(x);
+		} catch (e) {
+			/* 2.2.7.2. If either onFulfilled or onRejected throws an exception, promise2 must be rejected with the thrown exception as the reason. */
+			thenPromise.reject(e);
+		}
+	}
+
+	Promise.prototype._invokeResolver = function(resolver) {
+		try {
+			resolver(this.resolve.bind(this), this.reject.bind(this));
+		} catch (e) {
+			this.reject(e);
+		}
+	}
+
+	exports.Promise = Promise;
+}));
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
@@ -859,17 +1249,39 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		return HealthPotion;
 	}(Drinkable);
 
-	var ManaPotion = function (_Drinkable2) {
-		_inherits(ManaPotion, _Drinkable2);
+	var Lutefisk = function (_Drinkable2) {
+		_inherits(Lutefisk, _Drinkable2);
+
+		function Lutefisk() {
+			_classCallCheck(this, Lutefisk);
+
+			var _this24 = _possibleConstructorReturn(this, _Drinkable2.call(this, 0, { ch: "%", fg: "#ff0", name: "lutefisk" }));
+
+			_this24._visual.name = "lutefisk"; // no modifiers, sry
+			return _this24;
+		}
+
+		Lutefisk.prototype.pick = function pick(who) {
+			who.getLevel().setItem(who.getXY(), null);
+			add$1("You eat %the. You feel weird.", this);
+			who.adjustStat("hp", who.maxhp);
+			who.adjustStat("mana", -who.maxmana);
+		};
+
+		return Lutefisk;
+	}(Drinkable);
+
+	var ManaPotion = function (_Drinkable3) {
+		_inherits(ManaPotion, _Drinkable3);
 
 		function ManaPotion() {
 			_classCallCheck(this, ManaPotion);
 
-			return _possibleConstructorReturn(this, _Drinkable2.call(this, POTION_MANA, { ch: "!", fg: "#00e", name: "mana potion" }));
+			return _possibleConstructorReturn(this, _Drinkable3.call(this, POTION_MANA, { ch: "!", fg: "#00e", name: "mana potion" }));
 		}
 
 		ManaPotion.prototype.pick = function pick(who) {
-			_Drinkable2.prototype.pick.call(this, who);
+			_Drinkable3.prototype.pick.call(this, who);
 			if (who.maxmana == who.mana) {
 				add$1("Nothing happens.");
 			} else if (who.maxmana - who.mana <= this._strength) {
@@ -889,10 +1301,10 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Gold() {
 			_classCallCheck(this, Gold);
 
-			var _this25 = _possibleConstructorReturn(this, _Item3.call(this, "gold", { ch: "$", fg: "#fc0", name: "golden coin" }));
+			var _this26 = _possibleConstructorReturn(this, _Item3.call(this, "gold", { ch: "$", fg: "#fc0", name: "golden coin" }));
 
-			_this25.amount = 1;
-			return _this25;
+			_this26.amount = 1;
+			return _this26;
 		}
 
 		Gold.prototype.pick = function pick(who) {
@@ -921,6 +1333,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		Helmet: Helmet,
 		Armor: Armor,
 		HealthPotion: HealthPotion,
+		Lutefisk: Lutefisk,
 		ManaPotion: ManaPotion,
 		Gold: Gold
 	});
@@ -1017,7 +1430,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 	var HERO_RACES = ["dwarven", "halfling", "orcish", "human", "elvish", "noble"];
 	var HERO_TYPES = ["knight", "adventurer", "hero", "explorer"];
-	var HERO_CHATS = ["Hi there, fellow adventurer!", "I wonder how many tower floors are there...", "Some monsters in this tower give a pretty hard fight!", "Look out for potions, they might save your butt.", "A sharp sword is better than a blunt one." // FIXME dalsi
+	var HERO_CHATS = ["Hi there, fellow adventurer!", "I wonder how many tower floors are there...", "Some monsters in this tower give a pretty hard fight!", "Look out for potions, they might save your butt.", "So, you are also looking for that sleeping princess?", "A sharp sword is better than a blunt one." // FIXME dalsi
 	];
 
 	var Autonomous = function (_Being) {
@@ -1026,14 +1439,14 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Autonomous(visual) {
 			_classCallCheck(this, Autonomous);
 
-			var _this26 = _possibleConstructorReturn(this, _Being.call(this, visual));
+			var _this27 = _possibleConstructorReturn(this, _Being.call(this, visual));
 
-			_this26.ai = {
+			_this27.ai = {
 				hostile: ROT.RNG.getUniform() < HOSTILE_CHANCE,
 				mobile: true
 			};
-			_this26.inventory.addItem(new Gold());
-			return _this26;
+			_this27.inventory.addItem(new Gold());
+			return _this27;
 		}
 
 		Autonomous.prototype.act = function act() {
@@ -1053,11 +1466,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Rat() {
 			_classCallCheck(this, Rat);
 
-			var _this27 = _possibleConstructorReturn(this, _Autonomous.call(this, { ch: "r", fg: "#aaa", name: "rat" }));
+			var _this28 = _possibleConstructorReturn(this, _Autonomous.call(this, { ch: "r", fg: "#aaa", name: "rat" }));
 
-			_this27.mana = _this27.maxmana = 0;
-			_this27.hp = _this27.maxhp = 1;
-			return _this27;
+			_this28.mana = _this28.maxmana = 0;
+			_this28.hp = _this28.maxhp = 1;
+			return _this28;
 		}
 
 		return Rat;
@@ -1071,11 +1484,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Bat() {
 			_classCallCheck(this, Bat);
 
-			var _this28 = _possibleConstructorReturn(this, _Autonomous2.call(this, { ch: "b", fg: "#a83", name: "bat" }));
+			var _this29 = _possibleConstructorReturn(this, _Autonomous2.call(this, { ch: "b", fg: "#a83", name: "bat" }));
 
-			_this28.mana = _this28.maxmana = 0;
-			_this28.hp = _this28.maxhp = 10;
-			return _this28;
+			_this29.mana = _this29.maxmana = 0;
+			_this29.hp = _this29.maxhp = 10;
+			return _this29;
 		}
 
 		return Bat;
@@ -1089,10 +1502,10 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Goblin() {
 			_classCallCheck(this, Goblin);
 
-			var _this29 = _possibleConstructorReturn(this, _Autonomous3.call(this, { ch: "g", fg: "#33a", name: "goblin" }));
+			var _this30 = _possibleConstructorReturn(this, _Autonomous3.call(this, { ch: "g", fg: "#33a", name: "goblin" }));
 
-			_this29.mana = _this29.maxmana = 10;
-			return _this29;
+			_this30.mana = _this30.maxmana = 10;
+			return _this30;
 		}
 
 		return Goblin;
@@ -1106,13 +1519,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Orc() {
 			_classCallCheck(this, Orc);
 
-			var _this30 = _possibleConstructorReturn(this, _Autonomous4.call(this, { ch: "o", fg: "#3a3", name: "orc" }));
+			var _this31 = _possibleConstructorReturn(this, _Autonomous4.call(this, { ch: "o", fg: "#3a3", name: "orc" }));
 
-			_this30.mana = _this30.maxmana = 20;
+			_this31.mana = _this31.maxmana = 20;
 			if (ROT.RNG.getUniform() > 0.5) {
-				_this30.inventory.addItem(new Dagger());
+				_this31.inventory.addItem(new Dagger());
 			}
-			return _this30;
+			return _this31;
 		}
 
 		return Orc;
@@ -1126,13 +1539,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function OrcWitch() {
 			_classCallCheck(this, OrcWitch);
 
-			var _this31 = _possibleConstructorReturn(this, _Autonomous5.call(this, { ch: "O", fg: "#33a", name: "orcish witch" }));
+			var _this32 = _possibleConstructorReturn(this, _Autonomous5.call(this, { ch: "O", fg: "#33a", name: "orcish witch" }));
 
-			_this31.sex = 1;
+			_this32.sex = 1;
 			if (ROT.RNG.getUniform() > 0.5) {
-				_this31.inventory.addItem(new Helmet());
+				_this32.inventory.addItem(new Helmet());
 			}
-			return _this31;
+			return _this32;
 		}
 
 		return OrcWitch;
@@ -1146,15 +1559,15 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Skeleton() {
 			_classCallCheck(this, Skeleton);
 
-			var _this32 = _possibleConstructorReturn(this, _Autonomous6.call(this, { ch: "s", fg: "#eee", name: "skeleton" }));
+			var _this33 = _possibleConstructorReturn(this, _Autonomous6.call(this, { ch: "s", fg: "#eee", name: "skeleton" }));
 
-			_this32.hp = _this32.maxhp = 25;
+			_this33.hp = _this33.maxhp = 25;
 			if (ROT.RNG.getUniform() > 0.5) {
-				_this32.inventory.addItem(new Dagger());
+				_this33.inventory.addItem(new Dagger());
 			} else {
-				_this32.inventory.addItem(new Sword());
+				_this33.inventory.addItem(new Sword());
 			}
-			return _this32;
+			return _this33;
 		}
 
 		return Skeleton;
@@ -1168,16 +1581,16 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Ogre() {
 			_classCallCheck(this, Ogre);
 
-			var _this33 = _possibleConstructorReturn(this, _Autonomous7.call(this, { ch: "O", fg: "#3a3", name: "ogre" }));
+			var _this34 = _possibleConstructorReturn(this, _Autonomous7.call(this, { ch: "O", fg: "#3a3", name: "ogre" }));
 
-			_this33.hp = _this33.maxhp = 30;
+			_this34.hp = _this34.maxhp = 30;
 			if (ROT.RNG.getUniform() > 0.5) {
-				_this33.inventory.addItem(new Mace());
+				_this34.inventory.addItem(new Mace());
 			}
 			if (ROT.RNG.getUniform() > 0.5) {
-				_this33.inventory.addItem(new Shield());
+				_this34.inventory.addItem(new Shield());
 			}
-			return _this33;
+			return _this34;
 		}
 
 		return Ogre;
@@ -1205,12 +1618,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Spider() {
 			_classCallCheck(this, Spider);
 
-			var _this35 = _possibleConstructorReturn(this, _Autonomous9.call(this, { ch: "s", fg: "#c66", name: "spider" }));
+			var _this36 = _possibleConstructorReturn(this, _Autonomous9.call(this, { ch: "s", fg: "#c66", name: "spider" }));
 
-			_this35.hp = _this35.maxhp = 10;
-			_this35.mana = _this35.maxmana = 0;
-			_this35.attack = 15;
-			return _this35;
+			_this36.hp = _this36.maxhp = 10;
+			_this36.mana = _this36.maxmana = 0;
+			_this36.attack = 15;
+			return _this36;
 		}
 
 		return Spider;
@@ -1224,12 +1637,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Snake() {
 			_classCallCheck(this, Snake);
 
-			var _this36 = _possibleConstructorReturn(this, _Autonomous10.call(this, { ch: "s", fg: "#6c6", name: "poisonous snake" }));
+			var _this37 = _possibleConstructorReturn(this, _Autonomous10.call(this, { ch: "s", fg: "#6c6", name: "poisonous snake" }));
 
-			_this36.hp = _this36.maxhp = 10;
-			_this36.mana = _this36.maxmana = 0;
-			_this36.attack = 15;
-			return _this36;
+			_this37.hp = _this37.maxhp = 10;
+			_this37.mana = _this37.maxmana = 0;
+			_this37.attack = 15;
+			return _this37;
 		}
 
 		return Snake;
@@ -1243,20 +1656,20 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Minotaur() {
 			_classCallCheck(this, Minotaur);
 
-			var _this37 = _possibleConstructorReturn(this, _Autonomous11.call(this, { ch: "M", fg: "#ca7", name: "minotaur warrior" }));
+			var _this38 = _possibleConstructorReturn(this, _Autonomous11.call(this, { ch: "M", fg: "#ca7", name: "minotaur warrior" }));
 
-			_this37.hp = _this37.maxhp = 30;
-			_this37.mana = _this37.maxmana = 30;
+			_this38.hp = _this38.maxhp = 30;
+			_this38.mana = _this38.maxmana = 30;
 			if (ROT.RNG.getUniform() > 0.5) {
-				_this37.inventory.addItem(new Mace());
+				_this38.inventory.addItem(new Mace());
 			}
 			if (ROT.RNG.getUniform() > 0.5) {
-				_this37.inventory.addItem(new Shield());
+				_this38.inventory.addItem(new Shield());
 			}
 			if (ROT.RNG.getUniform() > 0.5) {
-				_this37.inventory.addItem(new Armor());
+				_this38.inventory.addItem(new Armor());
 			}
-			return _this37;
+			return _this38;
 		}
 
 		return Minotaur;
@@ -1270,12 +1683,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Tree$1() {
 			_classCallCheck(this, Tree$1);
 
-			var _this38 = _possibleConstructorReturn(this, _Autonomous12.call(this, { ch: "T", fg: "#3c3", name: "animated tree" }));
+			var _this39 = _possibleConstructorReturn(this, _Autonomous12.call(this, { ch: "T", fg: "#3c3", name: "animated tree" }));
 
-			_this38.hp = _this38.maxhp = 30;
-			_this38.mana = _this38.maxmana = 30;
-			_this38.ai.mobile = false;
-			return _this38;
+			_this39.hp = _this39.maxhp = 30;
+			_this39.mana = _this39.maxmana = 30;
+			_this39.ai.mobile = false;
+			return _this39;
 		}
 
 		return Tree$1;
@@ -1297,11 +1710,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				name: race + " " + type
 			};
 
-			var _this39 = _possibleConstructorReturn(this, _Autonomous13.call(this, visual));
+			var _this40 = _possibleConstructorReturn(this, _Autonomous13.call(this, visual));
 
-			_this39.sex = 2;
-			_this39.ai.hostile = false;
-			return _this39;
+			_this40.sex = 2;
+			_this40.ai.hostile = false;
+			return _this40;
 		}
 
 		Hero.prototype.getChat = function getChat() {
@@ -1462,13 +1875,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function PC() {
 			_classCallCheck(this, PC);
 
-			var _this40 = _possibleConstructorReturn(this, _Being2.call(this, { ch: "@", fg: "#fff", name: "you" }));
+			var _this41 = _possibleConstructorReturn(this, _Being2.call(this, { ch: "@", fg: "#fff", name: "you" }));
 
-			_this40._resolve = null; // end turn
-			_this40.fov = {};
+			_this41._resolve = null; // end turn
+			_this41.fov = {};
 
-			subscribe("topology-change", _this40);
-			return _this40;
+			subscribe("topology-change", _this41);
+			return _this41;
 		}
 
 		PC.prototype.describeThe = function describeThe() {
@@ -1498,11 +1911,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		};
 
 		PC.prototype.act = function act() {
-			var _this41 = this;
+			var _this42 = this;
 
 			pause();
 			var promise = new Promise(function (resolve) {
-				return _this41._resolve = resolve;
+				return _this42._resolve = resolve;
 			});
 
 			promise = promise.then(function () {
@@ -1632,11 +2045,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		};
 
 		PC.prototype._attack = function _attack(being) {
-			var _this42 = this;
+			var _this43 = this;
 
 			add$1("You attack %the.", being);
 			start(being).then(function () {
-				return _this42._resolve();
+				return _this43._resolve();
 			});
 		};
 
@@ -1646,24 +2059,24 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		};
 
 		PC.prototype._interactWithBeing = function _interactWithBeing(being) {
-			var _this43 = this;
+			var _this44 = this;
 
 			var callbacks = [];
 			var options = [];
 
 			callbacks.push(function () {
-				return _this43._kiss(being);
+				return _this44._kiss(being);
 			});
 			options.push("Kiss %it gently".format(being));
 
 			callbacks.push(function () {
-				return _this43._chat(being);
+				return _this44._chat(being);
 			});
 			options.push("Talk to %it".format(being));
 
 			if (being instanceof Hero) {} else {
 				callbacks.push(function () {
-					return _this43._attack(being);
+					return _this44._attack(being);
 				});
 				options.push("Attack %it".format(being));
 			}
@@ -1765,12 +2178,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		};
 
 		Board.prototype.fall = function fall() {
-			var _this44 = this;
+			var _this45 = this;
 
 			var animation = new Animation();
 
 			this._data.forEach(function (col, index) {
-				_this44._fallColumn(index, animation);
+				_this45._fallColumn(index, animation);
 			});
 
 			return animation;
@@ -1848,7 +2261,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 
 		Board.prototype.extractSegment = function extractSegment(xy) {
-			var _this45 = this;
+			var _this46 = this;
 
 			var segment = [];
 			var value = this.at(xy).value;
@@ -1857,12 +2270,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				if (xy.x < 0 || xy.y < 0 || xy.x >= W || xy.y >= H) {
 					return;
 				}
-				var cell = _this45.at(xy);
+				var cell = _this46.at(xy);
 				if (!cell || cell.value != value) {
 					return;
 				}
 
-				_this45.set(xy, null);
+				_this46.set(xy, null);
 				segment.push(xy.clone());
 				tryIt(xy.plus(new XY(1, 0)));
 				tryIt(xy.plus(new XY(-1, 0)));
@@ -2495,9 +2908,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		return node$5;
 	}
 
-	var FACTS = ["This game was created in one week", "This game was written using rot.js, the JavaScript Roguelike Toolkit", "The tower is procedurally generated. Try resizing this page!", "You can reload this page to get another Fun Fact", "The original Sleeping Beauty fairy tale was written by Charles Perrault", "This game is best played with a maximized browser window", "This game can be won!", "This game can be lost!", "This game features permadeath and procedural generation", "This game uses the awesome 'Metrickal' font face"
-	// fixme dalsi
-	];
+	var FACTS = ["This game was created in one week", "This game was written using rot.js, the JavaScript Roguelike Toolkit", "The tower is procedurally generated. Try resizing this page!", "You can reload this page to get another Fun Fact", "The original Sleeping Beauty fairy tale was written by Charles Perrault", "This game is best played with a maximized browser window", "This game can be won!", "This game can be lost!", "This game features permadeath and procedural generation", "This game uses the awesome 'Metrickal' font face", "This game runs even in Microsoft Internet Explorer 11", "Eating a lutefisk might be dangerous"];
 
 	var node$6 = document.createElement("div");
 	node$6.classList.add("funfact");
@@ -2539,7 +2950,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		fit$2();
 
 		push({ handleKeyEvent: handleKeyEvent$2 });
+
 		window.addEventListener("resize", onResize);
+		window.addEventListener("load", onResize);
 
 		return new Promise(function (r) {
 			return resolve$2 = r;
@@ -2651,7 +3064,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		}
 
 		Level.prototype.activate = function activate(xy, who) {
-			var _this46 = this;
+			var _this47 = this;
 
 			if (this.danger == LAST_LEVEL) {
 				this._outro(who);
@@ -2665,7 +3078,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			who.moveTo(xy, this); // put to new
 
 			var beings = Object.keys(this._beings).map(function (key) {
-				return _this46._beings[key];
+				return _this47._beings[key];
 			}).filter(function (b) {
 				return b;
 			}); /* filter because of empty values */
@@ -2687,12 +3100,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		};
 
 		Level.prototype.trim = function trim() {
-			var _this47 = this;
+			var _this48 = this;
 
 			Object.keys(this._cells).forEach(function (key) {
 				var xy = XY.fromString(key);
-				if (!_this47.isInside(xy)) {
-					delete _this47._cells[key];
+				if (!_this48.isInside(xy)) {
+					delete _this48._cells[key];
 				}
 			});
 		};
@@ -3025,6 +3438,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		var features = {
 			item: 4,
 			potion: 3,
+			lutefisk: 0.1,
 			gold: 2,
 			enemy: 4,
 			hero: 1,
@@ -3049,6 +3463,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 						level.setItem(xy, getItem(level.danger));break;
 					case "potion":
 						level.setItem(xy, getPotion());break;
+					case "lutefisk":
+						level.setItem(xy, new Lutefisk());break;
 					case "gold":
 						level.setItem(xy, new Gold());break;
 					case "enemy":

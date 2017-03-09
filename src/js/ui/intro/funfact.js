@@ -8,8 +8,9 @@ const FACTS = [
 	"This game can be won!",
 	"This game can be lost!",
 	"This game features permadeath and procedural generation",
-	"This game uses the awesome 'Metrickal' font face"
-	// fixme dalsi
+	"This game uses the awesome 'Metrickal' font face",
+	"This game runs even in Microsoft Internet Explorer 11",
+	"Eating a lutefisk might be dangerous"
 ];
 
 let node = document.createElement("div");

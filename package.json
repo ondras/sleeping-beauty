@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Sleeping Beauty, a 2017 7DRL",
   "scripts": {
-    "babel": "babel src/app.rollup.js > app.js",
+    "babel": "cat src/polyfills/* > app.js; babel src/app.rollup.js >> app.js",
     "rollup": "rollup -c",
     "less": "lessc src/css/app.less > app.css",
     "build": "npm run less; npm run rollup; npm run babel"

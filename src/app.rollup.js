@@ -641,6 +641,20 @@ class HealthPotion extends Drinkable {
 	}
 }
 
+class Lutefisk extends Drinkable {
+	constructor() {
+		super(0, {ch:"%", fg:"#ff0", name:"lutefisk"});
+		this._visual.name = "lutefisk"; // no modifiers, sry
+	}
+
+	pick(who) {
+		who.getLevel().setItem(who.getXY(), null);
+		add$1("You eat %the. You feel weird.", this);
+		who.adjustStat("hp", who.maxhp);
+		who.adjustStat("mana", -who.maxmana);
+	}
+}
+
 class ManaPotion extends Drinkable {
 	constructor() {
 		super(POTION_MANA, {ch:"!", fg:"#00e", name:"mana potion"});
@@ -690,6 +704,7 @@ var items = Object.freeze({
 	Helmet: Helmet,
 	Armor: Armor,
 	HealthPotion: HealthPotion,
+	Lutefisk: Lutefisk,
 	ManaPotion: ManaPotion,
 	Gold: Gold
 });
@@ -788,6 +803,7 @@ const HERO_CHATS = [
 	"I wonder how many tower floors are there...",
 	"Some monsters in this tower give a pretty hard fight!",
 	"Look out for potions, they might save your butt.",
+	"So, you are also looking for that sleeping princess?",
 	"A sharp sword is better than a blunt one." // FIXME dalsi
 ];
 
@@ -2041,7 +2057,6 @@ function fit$2() {
 	result.push(final);
 
 	node$4.innerHTML = result.join("\n");
-
 }
 
 function getNode$2() {
@@ -2069,8 +2084,9 @@ const FACTS = [
 	"This game can be won!",
 	"This game can be lost!",
 	"This game features permadeath and procedural generation",
-	"This game uses the awesome 'Metrickal' font face"
-	// fixme dalsi
+	"This game uses the awesome 'Metrickal' font face",
+	"This game runs even in Microsoft Internet Explorer 11",
+	"Eating a lutefisk might be dangerous"
 ];
 
 let node$6 = document.createElement("div");
@@ -2111,7 +2127,9 @@ function start$1(n) {
 	fit$2();
 
 	push({handleKeyEvent: handleKeyEvent$2});
+
 	window.addEventListener("resize", onResize);
+	window.addEventListener("load", onResize);
 
 	return new Promise(r => resolve$2 = r);
 }
@@ -2537,6 +2555,7 @@ function decorateFull(level) {
 	let features = {
 		item: 4,
 		potion: 3,
+		lutefisk: 0.1,
 		gold: 2,
 		enemy: 4,
 		hero: 1,
@@ -2558,6 +2577,7 @@ function decorateFull(level) {
 			switch (feature) {
 				case "item": level.setItem(xy, getItem(level.danger)); break;
 				case "potion": level.setItem(xy, getPotion()); break;
+				case "lutefisk": level.setItem(xy, new Lutefisk()); break;
 				case "gold": level.setItem(xy, new Gold()); break;
 				case "enemy": getBeing(level.danger).moveTo(xy, level); break;
 				case "hero": new Hero().moveTo(xy, level); break;

@@ -35,7 +35,9 @@ export function start(n) {
 	bottom.fit();
 
 	keyboard.push({handleKeyEvent});
+
 	window.addEventListener("resize", onResize);
+	window.addEventListener("load", onResize);
 
 	return new Promise(r => resolve = r);
 }

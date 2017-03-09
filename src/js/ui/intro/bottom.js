@@ -65,7 +65,6 @@ export function fit() {
 	result.push(final);
 
 	node.innerHTML = result.join("\n");
-
 }
 
 export function getNode() {
