@@ -1648,7 +1648,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			var _this31 = _possibleConstructorReturn(this, _Autonomous3.call(this, { ch: "g", fg: "#33a", name: "goblin" }));
 
-			_this31.mana = _this31.maxmana = 10;
+			_this31.hp = _this31.maxhp = 10;
+			_this31.mana = _this31.maxmana = 5;
 			return _this31;
 		}
 
@@ -1665,7 +1666,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			var _this32 = _possibleConstructorReturn(this, _Autonomous4.call(this, { ch: "o", fg: "#3a3", name: "orc" }));
 
-			_this32.mana = _this32.maxmana = 20;
+			_this32.hp = _this32.maxhp = 15;
+			_this32.mana = _this32.maxmana = 10;
 			if (ROT.RNG.getUniform() > 0.5) {
 				_this32.inventory.addItem(new Dagger());
 			}
@@ -1685,6 +1687,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			var _this33 = _possibleConstructorReturn(this, _Autonomous5.call(this, { ch: "O", fg: "#33a", name: "orcish witch" }));
 
+			_this33.hp = _this33.maxhp = 15;
 			_this33.sex = 1;
 			if (ROT.RNG.getUniform() > 0.5) {
 				_this33.inventory.addItem(new Helmet());
@@ -2798,7 +2801,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		//	console.log("attack %s, defense %s, damage %s", attack, defense, damage);
 		damage = Math.max(1, damage);
 
-		var verb = (options.isMagic ? "%{verb,cast} a spell on %the" : "%{verb,hit} %the").format(attacker, defender);
+		var verb = (options.isMagic ? "%{verb,cast} a spell at %the" : "%{verb,hit} %the").format(attacker, defender);
 		var newHP = Math.max(0, defender.hp - damage);
 		if (newHP > 0) {
 			var frac = newHP / defender.maxhp; // >0, < maxhp

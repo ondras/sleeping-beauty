@@ -55,7 +55,8 @@ Bat.danger = 1;
 export class Goblin extends Autonomous {
 	constructor() {
 		super({ch:"g", fg:"#33a", name:"goblin"});
-		this.mana = this.maxmana = 10;
+		this.hp = this.maxhp = 10;
+		this.mana = this.maxmana = 5;
 	}
 }
 Goblin.danger = 2;
@@ -63,7 +64,8 @@ Goblin.danger = 2;
 export class Orc extends Autonomous {
 	constructor() {
 		super({ch:"o", fg:"#3a3", name:"orc"});
-		this.mana = this.maxmana = 20;
+		this.hp = this.maxhp = 15;
+		this.mana = this.maxmana = 10;
 		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new items.Dagger()); }
 	}
 }
@@ -72,6 +74,7 @@ Orc.danger = 3;
 export class OrcWitch extends Autonomous {
 	constructor() {
 		super({ch:"O", fg:"#33a", name:"orcish witch"});
+		this.hp = this.maxhp = 15;
 		this.sex = 1;
 		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new items.Helmet()); }
 	}

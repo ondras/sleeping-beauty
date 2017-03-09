@@ -42,7 +42,7 @@ function doDamage(attacker, defender, options = {}) {
 //	console.log("attack %s, defense %s, damage %s", attack, defense, damage);
 	damage = Math.max(1, damage);
 
-	let verb = (options.isMagic ? "%{verb,cast} a spell on %the" : "%{verb,hit} %the").format(attacker, defender);
+	let verb = (options.isMagic ? "%{verb,cast} a spell at %the" : "%{verb,hit} %the").format(attacker, defender);
 	let newHP = Math.max(0, defender.hp-damage);
 	if (newHP > 0) {
 		let frac = newHP/defender.maxhp; // >0, < maxhp
