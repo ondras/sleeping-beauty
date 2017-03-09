@@ -1,4 +1,5 @@
 import * as items from "item/items.js";
+import * as beings from "being/beings.js";
 
 function get(classes, danger) {
 	let d = ROT.RNG.getNormal(danger, 1);
@@ -30,4 +31,14 @@ function get(classes, danger) {
 
 export function getItem(danger) {
 	return get(items, danger);
+}
+
+export function getBeing(danger) {
+	return get(beings, danger);
+}
+
+export function getPotion() {
+	let avail = [items.HealthPotion, items.ManaPotion];
+	let ctor = avail.random();
+	return new ctor();
 }

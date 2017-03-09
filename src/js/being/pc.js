@@ -24,7 +24,8 @@ let COMBAT_OPTIONS = {
 const TUTORIAL = {
 	staircase: false,
 	item: false,
-	door: false
+	door: false,
+	enemy: false
 }
 
 class PC extends Being {
@@ -162,7 +163,7 @@ class PC extends Being {
 	_chat(being) {
 		let text = being.getChat();
 		if (text) {
-			log.add(`%The says, \"${text}\".`, being);
+			log.add(`%The says, \"${text}\"`, being);
 		} else {
 			log.add("%The does not say anything.", being);
 		}
@@ -212,6 +213,10 @@ class PC extends Being {
 			if (entity instanceof cells.Door && !TUTORIAL.door) {
 				TUTORIAL.door = true;
 				log.add("To interact with stuff, press both a {#fff}modifier key{} (Ctrl, Alt, Shift or Command) and a {#fff}direction key{} (used for movement).");
+			}
+			if (entity instanceof Being && !TUTORIAL.enemy) {
+				log.add("If you wish to interact with beings (attack them, for example), press both a {#fff}modifier key{} (Ctrl, Alt, Shift or Command) and a {#fff}direction key{} (used for movement).");
+				TUTORIAL.enemy = true;
 			}
 			return;
 		}

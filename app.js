@@ -369,11 +369,11 @@ class Being extends Entity {
 		this.blocks = BLOCKS_MOVEMENT;
 		this._xy = null;
 		this._level = null;
-		this.attack = 0;
-		this.defense = 0;
+		this.attack = 10;
+		this.defense = 10;
 		this.sex = 0;
-		this.hp = this.maxhp = 10;
-		this.mana = this.maxmana = 10;
+		this.hp = this.maxhp = 20;
+		this.mana = this.maxmana = 50;
 	}
 
 	getXY() { return this._xy; }
@@ -451,8 +451,8 @@ const AI_IDLE = 0.4;
 const PC_SIGHT = 8;
 const LAST_LEVEL = 3;
 
-
-
+const POTION_HP = 10;
+const POTION_MANA = 10;
 
 const COMBAT_MODIFIER = 0.4;
 
@@ -489,7 +489,24 @@ class Item extends Entity {
 	}
 }
 
+class Drinkable extends Item {
+	constructor(strength, visual) {
+		super("potion", visual);
+		this._strength = strength;
 
+		if (ROT.RNG.getUniform() > 0.5) {
+			let diff = Math.round(strength/5);
+			if (ROT.RNG.getUniform() > 0.5) { diff *= -1; }
+			this._strength += diff;
+			this._visual.name = `${diff > 0 ? "strong" : "weak"} ${this._visual.name}`;
+		}
+	}
+
+	pick(who) {
+		who.getLevel().setItem(who.getXY(), null);
+		add$1("You drink %the.", this);
+	}
+}
 
 class Wearable extends Item {
 	constructor(type, visual, modifier, prefixes) {
@@ -537,9 +554,45 @@ const WEAPON_PREFIXES = {
 	"epic": 2
 };
 
+const SHIELD_PREFIXES = {
+	"small": -1,
+	"large": 1,
+	"tower": 2
+};
 
+const ARMOR_PREFIXES = {
+	"leather": 1,
+	"iron": 2,
+	"tempered": 3
+};
 
+class Dagger extends Wearable {
+	constructor() {
+		super("weapon", {ch:"(", fg:"#ccd", name:"dagger"}, 1, WEAPON_PREFIXES);
+	}
+}
+Dagger.danger = 1;
 
+class Sword extends Wearable {
+	constructor() {
+		super("weapon", {ch:"(", fg:"#dde", name:"sword"}, 2, WEAPON_PREFIXES);
+	}
+}
+Sword.danger = 2;
+
+class Axe extends Wearable {
+	constructor() {
+		super("weapon", {ch:")", fg:"#ccd", name:"axe"}, 3, WEAPON_PREFIXES);
+	}
+}
+Axe.danger = 3;
+
+class Mace extends Wearable {
+	constructor() {
+		super("weapon", {ch:")", fg:"#bbc", name:"mace"}, 3, WEAPON_PREFIXES);
+	}
+}
+Mace.danger = 4;
 
 class GreatSword extends Wearable {
 	constructor() {
@@ -548,12 +601,62 @@ class GreatSword extends Wearable {
 }
 GreatSword.danger = 5;
 
+class Shield extends Wearable {
+	constructor() {
+		super("shield", {ch:"[", fg:"#841", name:"shield"}, 2, SHIELD_PREFIXES);
+	}
+}
+Shield.danger = 2;
 
+class Helmet extends Wearable {
+	constructor() {
+		super("helmet", {ch:"]", fg:"#631", name:"helmet"}, 1, ARMOR_PREFIXES);
+	}
+}
+Helmet.danger = 2;
 
+class Armor extends Wearable {
+	constructor() {
+		super("armor", {ch:"]", fg:"#a62", name:"armor"}, 2, ARMOR_PREFIXES);
+	}
+}
+Armor.danger = 3;
 
+class HealthPotion extends Drinkable {
+	constructor() {
+		super(POTION_HP, {ch:"!", fg:"#e00", name:"health potion"});
+	}
 
+	pick(who) {
+		super.pick(who);
+		if (who.maxhp == who.hp) {
+			add$1("Nothing happens.");
+		} else if (who.maxhp - who.hp <= this._strength) {
+			add$1("You are completely healed.");
+		} else {
+			add$1("Some of your health is restored.");
+		}
+		who.adjustStat("hp", this._strength);
+	}
+}
 
+class ManaPotion extends Drinkable {
+	constructor() {
+		super(POTION_MANA, {ch:"!", fg:"#00e", name:"mana potion"});
+	}
 
+	pick(who) {
+		super.pick(who);
+		if (who.maxmana == who.mana) {
+			add$1("Nothing happens.");
+		} else if (who.maxmana - who.mana <= this._strength) {
+			add$1("Your mana is completely refilled.");
+		} else {
+			add$1("Some of your mana is refilled.");
+		}
+		who.adjustStat("mana", this._strength);
+	}
+}
 
 class Gold extends Item {
 	constructor() {
@@ -574,6 +677,21 @@ class Gold extends Item {
 		publish("status-change");
 	}
 }
+
+
+var items = Object.freeze({
+	Dagger: Dagger,
+	Sword: Sword,
+	Axe: Axe,
+	Mace: Mace,
+	GreatSword: GreatSword,
+	Shield: Shield,
+	Helmet: Helmet,
+	Armor: Armor,
+	HealthPotion: HealthPotion,
+	ManaPotion: ManaPotion,
+	Gold: Gold
+});
 
 const RATIO = 1.6;
 
@@ -694,10 +812,13 @@ class Autonomous extends Being {
 class Rat extends Autonomous {
 	constructor() {
 		super({ch:"r", fg:"#aaa", name:"rat"});
+		this.attack = 1;
+		this.defense = 0;
 		this.mana = this.maxmana = 0;
 		this.hp = this.maxhp = 1;
 	}
 }
+Rat.danger = 1;
 
 class Hero extends Autonomous {
 	constructor() {
@@ -719,12 +840,23 @@ class Hero extends Autonomous {
 
 	getChat() {
 		if (this._level.danger == LAST_LEVEL) {
-			return "You can do whatever you want here, but beware - no kissing!";
+			return [
+				"You can do whatever you want here, but beware - no kissing!",
+				"We only have one rule here: no kissing!",
+				"Make sure you don't wake her up!",
+				"I see, another lucky adventurer!"
+			].random();
 		} else {
 			return HERO_CHATS.random();
 		}
 	}
 }
+
+
+var beings = Object.freeze({
+	Rat: Rat,
+	Hero: Hero
+});
 
 const CONSUMERS = [];
 
@@ -828,7 +960,8 @@ let COMBAT_OPTIONS = {
 const TUTORIAL = {
 	staircase: false,
 	item: false,
-	door: false
+	door: false,
+	enemy: false
 };
 
 class PC extends Being {
@@ -836,7 +969,6 @@ class PC extends Being {
 		super({ch:"@", fg:"#fff", name:"you"});
 		this._resolve = null; // end turn
 		this.fov = {};
-		this.inventory.addItem(new GreatSword());
 
 		subscribe("topology-change", this);
 	}
@@ -851,7 +983,6 @@ class PC extends Being {
 		this.inventory.getItems().forEach(item => {
 			if (item.combat) { options[item.combat] += 2; }
 		});
-		console.log(options);
 		return ROT.RNG.getWeightedValue(options);
 	}
 
@@ -1018,6 +1149,10 @@ class PC extends Being {
 			if (entity instanceof Door && !TUTORIAL.door) {
 				TUTORIAL.door = true;
 				add$1("To interact with stuff, press both a {#fff}modifier key{} (Ctrl, Alt, Shift or Command) and a {#fff}direction key{} (used for movement).");
+			}
+			if (entity instanceof Being && !TUTORIAL.enemy) {
+				add$1("If you wish to interact with beings (attack them, for example), press both a {#fff}modifier key{} (Ctrl, Alt, Shift or Command) and a {#fff}direction key{} (used for movement).");
+				TUTORIAL.enemy = true;
 			}
 			return;
 		}
@@ -2091,6 +2226,48 @@ class Level {
 	}
 }
 
+function get(classes, danger) {
+	let d = ROT.RNG.getNormal(danger, 1);
+	d = Math.max(1, d);
+
+	if (d <= danger+1) { // okay, take this one
+	} else { // too large -- take any other lower value
+		d = ROT.RNG.getUniformInt(1, danger);
+	}
+
+	classes = Object.keys(classes).map(key => classes[key]);
+	let avail = classes.filter(c => "danger" in c);
+
+	let best = [];
+	let bestDist = Infinity;
+	avail.forEach(c => {
+		let dist = Math.abs(c.danger - d);
+		if (dist < bestDist) {
+			bestDist = dist;
+			best = [];
+		}
+		if (dist == bestDist) {
+			best.push(c);
+		}
+	});
+	let ctor = best.random();
+	return new ctor();
+}
+
+function getItem(danger) {
+	return get(items, danger);
+}
+
+function getBeing(danger) {
+	return get(beings, danger);
+}
+
+function getPotion() {
+	let avail = [HealthPotion, ManaPotion];
+	let ctor = avail.random();
+	return new ctor();
+}
+
 // FIXME POLYFILL array.prototype.includes
 
 const DIST = 10;
@@ -2208,27 +2385,77 @@ function decorateLast(level) {
 	}
 }
 
+function decorateFirst(level) {
+	let features = ["rat", "potion", "dagger"];
+	level.rooms.forEach(room => {
+		if (room.center.is(level.start)) { // first room
+			level.carveDoors(room, {doorChance:1, closedChance:1});
+			return;
+		}
+
+		if (room.center.is(level.end)) {
+			level.carveDoors(room);
+			return;
+		}
+
+		level.carveDoors(room);
+		if (!features.length) { return; }
+		let feature = features.shift();
+		switch (feature) {
+			case "rat":
+				let rat = new Rat();
+				rat.ai.hostile = false;
+				rat.moveTo(room.center.clone(), level);
+			break;
+
+			case "potion":
+				level.setItem(room.center.clone(), new HealthPotion());
+			break;
+
+			case "dagger":
+				level.setItem(room.center.clone(), new Dagger());
+			break;
+		}
+	});
+}
+
+function decorateFull(level) {
+	let features = {
+		item: 3,
+		potion: 2,
+		gold: 1,
+		enemy: 3,
+		hero: 1,
+		empty: 2
+	};
+
+	level.rooms.forEach(room => {
+		level.carveDoors(room);
+		if (room.center.is(level.start) || room.center.is(level.end)) { return; }
+		
+		let xy = new XY(
+			ROT.RNG.getUniformInt(room.lt.x, room.rb.x),
+			ROT.RNG.getUniformInt(room.lt.y, room.rb.y)
+		);
+		if (level.getEntity(xy) != ROOM) { return; } // wrong place
+
+		let feature = ROT.RNG.getWeightedValue(features);
+		switch (feature) {
+			case "item": level.setItem(xy, getItem(level.danger)); break;
+			case "potion": level.setItem(xy, getPotion()); break;
+			case "gold": level.setItem(xy, new Gold()); break;
+			case "enemy": getBeing(level.danger).moveTo(xy, level); break;
+			case "hero": new Hero().moveTo(xy, level); break;
+		}
+	});
+}
+
 function decorateRegular(level) {
 	let r1 = furthestRoom(level.rooms, level.rooms[0]);
 	let r2 = furthestRoom(level.rooms, r1);
 
 	level.start = r1.center;
 	level.end = r2.center;
-	level.end = level.start.plus({x:1, y:0});
-
-	level.rooms.forEach(room => level.carveDoors(room));
-/*
-	let xy = new XY();
-	for (xy.x = r1.lt.x; xy.x <= r1.rb.x; xy.x++) {
-		for (xy.y = r1.lt.y; xy.y <= r1.rb.y; xy.y++) {
-			let item = factory.getItem(2);
-			level.setItem(xy, item);
-		}
-	}
-*/
-
-	let rat = new Rat();
-	rat.moveTo(level.start.plus({x:3,y:0}), level);	
 
 	/* staircase up, all non-last levels */
 	let up = new Staircase(true, staircaseCallback(level.danger+1, true));
@@ -2240,6 +2467,23 @@ function decorateRegular(level) {
 		let down = new Staircase(false, staircaseCallback(level.danger-1, false));
 		level.setCell(level.start, down);
 	}
+
+	if (level.danger == 1) {
+		decorateFirst(level);
+	} else {
+		decorateFull(level);
+	}
+
+/*
+	let xy = new XY();
+	for (xy.x = r1.lt.x; xy.x <= r1.rb.x; xy.x++) {
+		for (xy.y = r1.lt.y; xy.y <= r1.rb.y; xy.y++) {
+			let item = factory.getItem(2);
+			level.setItem(xy, item);
+		}
+	}
+*/
+
 }
 
 function decorate(level) {
@@ -2250,7 +2494,6 @@ function decorate(level) {
 	} else {
 		decorateRegular(level);
 	}
-
 }
 
 function connectHorizontal(level, room1, room2) {

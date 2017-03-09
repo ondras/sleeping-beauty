@@ -36,10 +36,13 @@ class Autonomous extends Being {
 export class Rat extends Autonomous {
 	constructor() {
 		super({ch:"r", fg:"#aaa", name:"rat"});
+		this.attack = 1;
+		this.defense = 0;
 		this.mana = this.maxmana = 0;
 		this.hp = this.maxhp = 1;
 	}
 }
+Rat.danger = 1;
 
 export class Hero extends Autonomous {
 	constructor() {
@@ -61,7 +64,12 @@ export class Hero extends Autonomous {
 
 	getChat() {
 		if (this._level.danger == rules.LAST_LEVEL) {
-			return "You can do whatever you want here, but beware - no kissing!";
+			return [
+				"You can do whatever you want here, but beware - no kissing!",
+				"We only have one rule here: no kissing!",
+				"Make sure you don't wake her up!",
+				"I see, another lucky adventurer!"
+			].random();
 		} else {
 			return HERO_CHATS.random();
 		}

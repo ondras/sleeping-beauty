@@ -14,11 +14,11 @@ export default class Being extends Entity {
 		this.blocks = BLOCKS_MOVEMENT;
 		this._xy = null;
 		this._level = null;
-		this.attack = 0;
-		this.defense = 0;
+		this.attack = 10;
+		this.defense = 10;
 		this.sex = 0;
-		this.hp = this.maxhp = 10;
-		this.mana = this.maxmana = 10;
+		this.hp = this.maxhp = 20;
+		this.mana = this.maxmana = 50;
 	}
 
 	getXY() { return this._xy; }

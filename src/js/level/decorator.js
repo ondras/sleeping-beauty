@@ -2,11 +2,11 @@ import XY from "util/xy.js";
 import { generate } from "./generator.js";
 import { dangerToRadius } from "./level.js";
 import * as factory from "util/factory.js";
-import { Rat, Hero } from "being/beings.js";
-import { Gold, Sword, Axe, Shield, HealthPotion, ManaPotion } from "item/items.js";
 
-import * as room from "./room.js";
+import * as beings from "being/beings.js";
+import * as items from "item/items.js";
 import * as cells from "./cells.js";
+import * as room from "./room.js";
 import * as rules from "rules.js";
 
 const levels = {};
@@ -38,17 +38,82 @@ function decorateLast(level) {
 			if (level.getEntity(xy) != cells.ROOM) { continue; }
 
 			if (xy.dist8(bed) == 1) { // close heroes
-				let hero = new Hero();
+				let hero = new beings.Hero();
 				hero.ai.mobile = false;
 				hero.moveTo(xy.clone(), level);
 				continue;
 			}
 
 			if (ROT.RNG.getUniform() > 0.5) { continue;  }
-			let hero = new Hero(); // remote heroes
+			let hero = new beings.Hero(); // remote heroes
 			hero.moveTo(xy.clone(), level);
 		}
 	}
+}
+
+function decorateFirst(level) {
+	let features = ["rat", "potion", "dagger"];
+	level.rooms.forEach(room => {
+		if (room.center.is(level.start)) { // first room
+			level.carveDoors(room, {doorChance:1, closedChance:1});
+			return;
+		}
+
+		if (room.center.is(level.end)) {
+			level.carveDoors(room);
+			return;
+		}
+
+		level.carveDoors(room);
+		if (!features.length) { return; }
+		let feature = features.shift();
+		switch (feature) {
+			case "rat":
+				let rat = new beings.Rat();
+				rat.ai.hostile = false;
+				rat.moveTo(room.center.clone(), level);
+			break;
+
+			case "potion":
+				level.setItem(room.center.clone(), new items.HealthPotion());
+			break;
+
+			case "dagger":
+				level.setItem(room.center.clone(), new items.Dagger());
+			break;
+		}
+	});
+}
+
+function decorateFull(level) {
+	let features = {
+		item: 4,
+		potion: 3,
+		gold: 2,
+		enemy: 4,
+		hero: 1,
+		empty: 2
+	}
+
+	level.rooms.forEach(room => {
+		level.carveDoors(room);
+		if (room.center.is(level.start) || room.center.is(level.end)) { return; }
+		
+		let xy = new XY(
+			ROT.RNG.getUniformInt(room.lt.x, room.rb.x),
+			ROT.RNG.getUniformInt(room.lt.y, room.rb.y)
+		);
+		if (level.getEntity(xy) != cells.ROOM) { return; } // wrong place
+
+		let feature = ROT.RNG.getWeightedValue(features);
+		switch (feature) {
+			case "item": level.setItem(xy, factory.getItem(level.danger)); break;
+			case "potion": level.setItem(xy, factory.getPotion()); break;
+			case "gold": level.setItem(xy, new items.Gold()); break;
+			case "enemy": factory.getBeing(level.danger).moveTo(xy, level); break;
+			case "hero": new beings.Hero().moveTo(xy, level); break;
+		}
+	});
 }
 
 function decorateRegular(level) {
@@ -57,21 +122,6 @@ function decorateRegular(level) {
 
 	level.start = r1.center;
 	level.end = r2.center;
-	level.end = level.start.plus({x:1, y:0});
-
-	level.rooms.forEach(room => level.carveDoors(room));
-/*
-	let xy = new XY();
-	for (xy.x = r1.lt.x; xy.x <= r1.rb.x; xy.x++) {
-		for (xy.y = r1.lt.y; xy.y <= r1.rb.y; xy.y++) {
-			let item = factory.getItem(2);
-			level.setItem(xy, item);
-		}
-	}
-*/
-
-	let rat = new Rat();
-	rat.moveTo(level.start.plus({x:3,y:0}), level);	
 
 	/* staircase up, all non-last levels */
 	let up = new cells.Staircase(true, staircaseCallback(level.danger+1, true));
@@ -83,6 +133,23 @@ function decorateRegular(level) {
 		let down = new cells.Staircase(false, staircaseCallback(level.danger-1, false));
 		level.setCell(level.start, down);
 	}
+
+	if (level.danger == 1) {
+		decorateFirst(level);
+	} else {
+		decorateFull(level);
+	}
+
+/*
+	let xy = new XY();
+	for (xy.x = r1.lt.x; xy.x <= r1.rb.x; xy.x++) {
+		for (xy.y = r1.lt.y; xy.y <= r1.rb.y; xy.y++) {
+			let item = factory.getItem(2);
+			level.setItem(xy, item);
+		}
+	}
+*/
+
 }
 
 export default function decorate(level) {
@@ -93,5 +160,4 @@ export default function decorate(level) {
 	} else {
 		decorateRegular(level);
 	}
-
 }
