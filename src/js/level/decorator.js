@@ -99,19 +99,21 @@ function decorateFull(level) {
 		level.carveDoors(room);
 		if (room.center.is(level.start) || room.center.is(level.end)) { return; }
 		
-		let xy = new XY(
-			ROT.RNG.getUniformInt(room.lt.x, room.rb.x),
-			ROT.RNG.getUniformInt(room.lt.y, room.rb.y)
-		);
-		if (level.getEntity(xy) != cells.ROOM) { return; } // wrong place
+		for (let i=0; i<2; i++) {
+			let xy = new XY(
+				ROT.RNG.getUniformInt(room.lt.x, room.rb.x),
+				ROT.RNG.getUniformInt(room.lt.y, room.rb.y)
+			);
+			if (level.getEntity(xy) != cells.ROOM) { continue; } // wrong place
 
-		let feature = ROT.RNG.getWeightedValue(features);
-		switch (feature) {
-			case "item": level.setItem(xy, factory.getItem(level.danger)); break;
-			case "potion": level.setItem(xy, factory.getPotion()); break;
-			case "gold": level.setItem(xy, new items.Gold()); break;
-			case "enemy": factory.getBeing(level.danger).moveTo(xy, level); break;
-			case "hero": new beings.Hero().moveTo(xy, level); break;
+			let feature = ROT.RNG.getWeightedValue(features);
+			switch (feature) {
+				case "item": level.setItem(xy, factory.getItem(level.danger)); break;
+				case "potion": level.setItem(xy, factory.getPotion()); break;
+				case "gold": level.setItem(xy, new items.Gold()); break;
+				case "enemy": factory.getBeing(level.danger).moveTo(xy, level); break;
+				case "hero": new beings.Hero().moveTo(xy, level); break;
+			}
 		}
 	});
 }

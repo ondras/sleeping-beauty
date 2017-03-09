@@ -100,8 +100,8 @@ export function generate(danger) {
 		connectWithClosest(r2, level);
 	}
 	
-	decorate(level);
 	level.trim();
+	decorate(level);
 
 	return level;
 }

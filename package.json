@@ -3,12 +3,19 @@
   "version": "1.0.0",
   "description": "Sleeping Beauty, a 2017 7DRL",
   "scripts": {
-    "js": "rollup -c",
-    "css": "lessc src/css/app.less > app.css"
+    "babel": "babel src/app.rollup.js > app.js",
+    "rollup": "rollup -c",
+    "less": "lessc src/css/app.less > app.css",
+    "build": "npm run less; npm run rollup; npm run babel"
+  },
+  "babel": {
+    "presets": [ ["es2015", { "loose": true, "modules": false }] ]
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "babel-cli": "^6.14.0",
+    "babel-preset-es2015": "^6.14.0",
     "less": "^2.7.2",
     "rollup": "^0.41.4",
     "rollup-plugin-includepaths": "^0.1.8"

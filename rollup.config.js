@@ -8,7 +8,7 @@ var includePathsOptions = {
 
 module.exports = {
     entry: "src/js/app.js",
-    dest: "app.js",
+    dest: "src/app.rollup.js",
     format: "iife",
     plugins: [ includePaths(includePathsOptions) ]
 };
