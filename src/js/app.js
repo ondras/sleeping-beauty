@@ -9,10 +9,9 @@ import * as actors from "util/actors.js";
 import pc from "being/pc.js";
 import { generate } from "level/generator.js";
 
-import { draw } from "ui/map/debug.js"
+// import { draw } from "ui/map/debug.js"
 
 let seed = Date.now();
-seed = 3;
 console.log("seed", seed);
 ROT.RNG.setSeed(seed);
 
@@ -33,8 +32,9 @@ function init() {
 
 	let level = generate(1);
 	level.activate(level.start, pc);
-	let canvas = draw(level);
-	canvas.style.left = canvas.style.top = 0;
+
+//	let canvas = draw(level);
+//	canvas.style.left = canvas.style.top = 0;
 
 	actors.loop();
 }

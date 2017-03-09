@@ -11,7 +11,7 @@ import * as rules from "rules.js";
 
 const levels = {};
 
-function decorateDebris(level) {
+function decorateBrambles(level) {
 	let radius = dangerToRadius(level.danger);
 	let dist = ROT.RNG.getUniformInt(2*radius, 5*radius);
 	let angle = ROT.RNG.getUniform()*2*Math.PI;
@@ -26,7 +26,7 @@ function decorateDebris(level) {
 		let xy = center.plus(new XY(Math.cos(a), Math.sin(a)).scale(dist)).round();
 		if (!level.isInside(xy)) { continue; }
 		if (level.getEntity(xy) != cells.WALL) { continue; }
-		level.setCell(xy, cells.ROOM);
+		level.setCell(xy, cells.BRAMBLES);
 	}
 }
 
@@ -105,6 +105,8 @@ function decorateFirst(level) {
 }
 
 function decorateFull(level) {
+	decorateBrambles(level);
+
 	let features = {
 		item: 4,
 		potion: 3,
@@ -156,8 +158,6 @@ function decorateRegular(level) {
 		let down = new cells.Staircase(false, staircaseCallback(level.danger-1, false));
 		level.setCell(level.start, down);
 	}
-
-	decorateDebris(level);
 
 	if (level.danger == 1) {
 		decorateFirst(level);

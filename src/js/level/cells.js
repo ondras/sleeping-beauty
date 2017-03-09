@@ -2,6 +2,14 @@ import Entity, { BLOCKS_NONE, BLOCKS_MOVEMENT, BLOCKS_LIGHT } from "entity.js";
 import * as log from "ui/log.js";
 import * as pubsub from "util/pubsub.js";
 
+export class Brambles extends Entity {
+	constructor() {
+		super({ch:"%", fg:"#483", name:"dense brambles"});
+	}
+
+	describeA() { return this.toString(); }
+}
+
 export class Princess extends Entity {
 	constructor() {
 		super({ch:"P", fg:"#ff0", name:"princess"});
@@ -93,3 +101,4 @@ export class Staircase extends Entity {
 export const ROOM = new Floor();
 export const CORRIDOR = new Floor();
 export const WALL = new Wall();
+export const BRAMBLES = new Brambles();

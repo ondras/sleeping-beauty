@@ -15,10 +15,10 @@ import * as cells from "level/cells.js";
 import choice from "ui/choice.js";
 
 let COMBAT_OPTIONS = {
-	[ATTACK_1]: 10,
-	[ATTACK_2]: 10,
-	[MAGIC_1]: 10,
-	[MAGIC_2]: 10
+	[ATTACK_1]: 2,
+	[ATTACK_2]: 2,
+	[MAGIC_1]: 2,
+	[MAGIC_2]: 2
 };
 
 const TUTORIAL = {
@@ -45,7 +45,7 @@ class PC extends Being {
 	getCombatOption() {
 		let options = Object.assign({}, COMBAT_OPTIONS);
 		this.inventory.getItems().forEach(item => {
-			if (item.combat) { options[item.combat] += 2; }
+			if (item.combat) { options[item.combat] += 1; }
 		});
 		return ROT.RNG.getWeightedValue(options);
 	}
@@ -103,6 +103,12 @@ class PC extends Being {
 
 		// getEntity not possible, because *we* are standing here :)
 
+		let cell = this._level.getCell(this._xy);
+		if (cell == cells.BRAMBLES && ROT.RNG.getUniform() < rules.BRAMBLE_CHANCE) {
+			log.add("You make your way through %s. Ouch! You injure yourself on a thorn.", cell);
+			this.adjustStat("hp", -1);
+		}
+
 		let item = this._level.getItem(this._xy);
 		if (item) {
 			log.add("%A is lying here.", item);
@@ -113,7 +119,6 @@ class PC extends Being {
 			return;
 		}
 
-		let cell = this._level.getCell(this._xy);
 		if (cell instanceof cells.Door) {
 			log.add("You pass through %a.", cell);
 		} else if (cell instanceof cells.Staircase) {

@@ -841,97 +841,113 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		pause();
 	}
 
-	var Princess = function (_Entity) {
-		_inherits(Princess, _Entity);
+	var Brambles = function (_Entity) {
+		_inherits(Brambles, _Entity);
+
+		function Brambles() {
+			_classCallCheck(this, Brambles);
+
+			return _possibleConstructorReturn(this, _Entity.call(this, { ch: "%", fg: "#483", name: "dense brambles" }));
+		}
+
+		Brambles.prototype.describeA = function describeA() {
+			return this.toString();
+		};
+
+		return Brambles;
+	}(Entity);
+
+	var Princess = function (_Entity2) {
+		_inherits(Princess, _Entity2);
 
 		function Princess() {
 			_classCallCheck(this, Princess);
 
-			var _this3 = _possibleConstructorReturn(this, _Entity.call(this, { ch: "P", fg: "#ff0", name: "princess" }));
-
-			_this3.blocks = BLOCKS_MOVEMENT;
-			return _this3;
-		}
-
-		return Princess;
-	}(Entity);
-
-	var Pillar = function (_Entity2) {
-		_inherits(Pillar, _Entity2);
-
-		function Pillar() {
-			_classCallCheck(this, Pillar);
-
-			var _this4 = _possibleConstructorReturn(this, _Entity2.call(this, { ch: "T", fg: "#fff", name: "pillar" }));
+			var _this4 = _possibleConstructorReturn(this, _Entity2.call(this, { ch: "P", fg: "#ff0", name: "princess" }));
 
 			_this4.blocks = BLOCKS_MOVEMENT;
 			return _this4;
 		}
 
+		return Princess;
+	}(Entity);
+
+	var Pillar = function (_Entity3) {
+		_inherits(Pillar, _Entity3);
+
+		function Pillar() {
+			_classCallCheck(this, Pillar);
+
+			var _this5 = _possibleConstructorReturn(this, _Entity3.call(this, { ch: "T", fg: "#fff", name: "pillar" }));
+
+			_this5.blocks = BLOCKS_MOVEMENT;
+			return _this5;
+		}
+
 		return Pillar;
 	}(Entity);
 
-	var Floor = function (_Entity3) {
-		_inherits(Floor, _Entity3);
+	var Floor = function (_Entity4) {
+		_inherits(Floor, _Entity4);
 
 		function Floor() {
 			_classCallCheck(this, Floor);
 
-			return _possibleConstructorReturn(this, _Entity3.call(this, { ch: ".", fg: "#aaa", name: "stone floor" }));
+			return _possibleConstructorReturn(this, _Entity4.call(this, { ch: ".", fg: "#aaa", name: "stone floor" }));
 		}
 
 		return Floor;
 	}(Entity);
 
-	var Wall = function (_Entity4) {
-		_inherits(Wall, _Entity4);
+	var Wall = function (_Entity5) {
+		_inherits(Wall, _Entity5);
 
 		function Wall() {
 			_classCallCheck(this, Wall);
 
-			var _this6 = _possibleConstructorReturn(this, _Entity4.call(this, { ch: "#", fg: "#666", name: "solid wall" }));
+			var _this7 = _possibleConstructorReturn(this, _Entity5.call(this, { ch: "#", fg: "#666", name: "solid wall" }));
 
-			_this6.blocks = BLOCKS_LIGHT;
-			return _this6;
+			_this7.blocks = BLOCKS_LIGHT;
+			return _this7;
 		}
 
 		return Wall;
 	}(Entity);
 
-	var Grass = function (_Entity5) {
-		_inherits(Grass, _Entity5);
+	var Grass = function (_Entity6) {
+		_inherits(Grass, _Entity6);
 
 		function Grass(ch) {
 			_classCallCheck(this, Grass);
 
-			return _possibleConstructorReturn(this, _Entity5.call(this, { ch: ch, fg: "#693" }));
+			return _possibleConstructorReturn(this, _Entity6.call(this, { ch: ch, fg: "#693" }));
 		}
 
 		return Grass;
 	}(Entity);
 
-	var Tree = function (_Entity6) {
-		_inherits(Tree, _Entity6);
+	var Tree = function (_Entity7) {
+		_inherits(Tree, _Entity7);
 
 		function Tree() {
 			_classCallCheck(this, Tree);
 
-			return _possibleConstructorReturn(this, _Entity6.call(this, { ch: "T", fg: "green" }));
+			return _possibleConstructorReturn(this, _Entity7.call(this, { ch: "T", fg: "green" }));
 		}
 
 		return Tree;
 	}(Entity);
 
-	var Door = function (_Entity7) {
-		_inherits(Door, _Entity7);
+	var Door = function (_Entity8) {
+		_inherits(Door, _Entity8);
 
 		function Door(closed) {
 			_classCallCheck(this, Door);
 
-			var _this9 = _possibleConstructorReturn(this, _Entity7.call(this, { ch: "/", fg: "#963" }));
+			var _this10 = _possibleConstructorReturn(this, _Entity8.call(this, { ch: "/", fg: "#963" }));
 
-			closed ? _this9._close() : _this9._open();
-			return _this9;
+			closed ? _this10._close() : _this10._open();
+			return _this10;
 		}
 
 		Door.prototype.isOpen = function isOpen() {
@@ -965,8 +981,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		return Door;
 	}(Entity);
 
-	var Staircase = function (_Entity8) {
-		_inherits(Staircase, _Entity8);
+	var Staircase = function (_Entity9) {
+		_inherits(Staircase, _Entity9);
 
 		function Staircase(up, callback) {
 			_classCallCheck(this, Staircase);
@@ -975,10 +991,10 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			var fg = "#aaa";
 			var name = "staircase leading " + (up ? "up" : "down");
 
-			var _this10 = _possibleConstructorReturn(this, _Entity8.call(this, { ch: ch, fg: fg, name: name }));
+			var _this11 = _possibleConstructorReturn(this, _Entity9.call(this, { ch: ch, fg: fg, name: name }));
 
-			_this10._callback = callback;
-			return _this10;
+			_this11._callback = callback;
+			return _this11;
 		}
 
 		Staircase.prototype.activate = function activate(who) {
@@ -992,28 +1008,29 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 	var ROOM = new Floor();
 	var CORRIDOR = new Floor();
 	var WALL = new Wall();
+	var BRAMBLES = new Brambles();
 
 	var IT = ["it", "her", "him"];
 
-	var Being = function (_Entity9) {
-		_inherits(Being, _Entity9);
+	var Being = function (_Entity10) {
+		_inherits(Being, _Entity10);
 
 		function Being(visual) {
 			_classCallCheck(this, Being);
 
-			var _this11 = _possibleConstructorReturn(this, _Entity9.call(this, visual));
+			var _this12 = _possibleConstructorReturn(this, _Entity10.call(this, visual));
 
-			_this11.inventory = new Inventory();
+			_this12.inventory = new Inventory();
 
-			_this11.blocks = BLOCKS_MOVEMENT;
-			_this11._xy = null;
-			_this11._level = null;
-			_this11.attack = 10;
-			_this11.defense = 10;
-			_this11.sex = 0;
-			_this11.hp = _this11.maxhp = 20;
-			_this11.mana = _this11.maxmana = 50;
-			return _this11;
+			_this12.blocks = BLOCKS_MOVEMENT;
+			_this12._xy = null;
+			_this12._level = null;
+			_this12.attack = 10;
+			_this12.defense = 10;
+			_this12.sex = 0;
+			_this12.hp = _this12.maxhp = 20;
+			_this12.mana = _this12.maxmana = 50;
+			return _this12;
 		}
 
 		Being.prototype.getXY = function getXY() {
@@ -1106,6 +1123,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 	var COMBAT_MODIFIER = 0.4;
 	var HOSTILE_CHANCE = 0.7;
 
+	var BRAMBLE_CHANCE = 0.5;
+
 	var ATTACK_1 = "a1";
 	var ATTACK_2 = "a2";
 	var MAGIC_1 = "m1";
@@ -1115,16 +1134,16 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 	var SUFFIXES = (_SUFFIXES = {}, _SUFFIXES[ATTACK_1] = "power", _SUFFIXES[ATTACK_2] = "treachery", _SUFFIXES[MAGIC_1] = "magical domination", _SUFFIXES[MAGIC_2] = "magical weakness", _SUFFIXES);
 
-	var Item = function (_Entity10) {
-		_inherits(Item, _Entity10);
+	var Item = function (_Entity11) {
+		_inherits(Item, _Entity11);
 
 		function Item(type, visual) {
 			_classCallCheck(this, Item);
 
-			var _this12 = _possibleConstructorReturn(this, _Entity10.call(this, visual));
+			var _this13 = _possibleConstructorReturn(this, _Entity11.call(this, visual));
 
-			_this12._type = type;
-			return _this12;
+			_this13._type = type;
+			return _this13;
 		}
 
 		Item.prototype.getType = function getType() {
@@ -1145,19 +1164,19 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Drinkable(strength, visual) {
 			_classCallCheck(this, Drinkable);
 
-			var _this13 = _possibleConstructorReturn(this, _Item.call(this, "potion", visual));
+			var _this14 = _possibleConstructorReturn(this, _Item.call(this, "potion", visual));
 
-			_this13._strength = strength;
+			_this14._strength = strength;
 
 			if (ROT.RNG.getUniform() > 0.5) {
 				var diff = Math.round(strength / 5);
 				if (ROT.RNG.getUniform() > 0.5) {
 					diff *= -1;
 				}
-				_this13._strength += diff;
-				_this13._visual.name = (diff > 0 ? "strong" : "weak") + " " + _this13._visual.name;
+				_this14._strength += diff;
+				_this14._visual.name = (diff > 0 ? "strong" : "weak") + " " + _this14._visual.name;
 			}
-			return _this13;
+			return _this14;
 		}
 
 		Drinkable.prototype.pick = function pick(who) {
@@ -1174,30 +1193,30 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Wearable(type, visual, modifier, prefixes) {
 			_classCallCheck(this, Wearable);
 
-			var _this14 = _possibleConstructorReturn(this, _Item2.call(this, type, visual));
+			var _this15 = _possibleConstructorReturn(this, _Item2.call(this, type, visual));
 
-			_this14.modifies = type == "weapon" ? "attack" : "defense";
-			_this14.modifier = modifier;
+			_this15.modifies = type == "weapon" ? "attack" : "defense";
+			_this15.modifier = modifier;
 
-			_this14.combat = null;
+			_this15.combat = null;
 
 			var avail = Object.keys(prefixes);
 			if (avail.length > 0 && ROT.RNG.getUniform() > 0.5) {
 				var prefix = avail.random();
-				_this14._visual.name = prefix + " " + _this14._visual.name;
-				_this14.modifier += prefixes[prefix];
+				_this15._visual.name = prefix + " " + _this15._visual.name;
+				_this15.modifier += prefixes[prefix];
 			}
 
 			if (ROT.RNG.getUniform() < COMBAT_MODIFIER) {
 				var combat = [ATTACK_1, ATTACK_2, MAGIC_1, MAGIC_2].random();
-				_this14.combat = combat;
-				_this14._visual.name = _this14._visual.name + " of " + SUFFIXES[combat];
+				_this15.combat = combat;
+				_this15._visual.name = _this15._visual.name + " of " + SUFFIXES[combat];
 				var color1 = ROT.Color.fromString(COLORS[combat]);
-				var color2 = ROT.Color.fromString(_this14._visual.fg);
+				var color2 = ROT.Color.fromString(_this15._visual.fg);
 				var color3 = ROT.Color.interpolate(color1, color2, 0.5);
-				_this14._visual.fg = ROT.Color.toRGB(color3);
+				_this15._visual.fg = ROT.Color.toRGB(color3);
 			}
-			return _this14;
+			return _this15;
 		}
 
 		Wearable.prototype.pick = function pick(who) {
@@ -1376,10 +1395,10 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Lutefisk() {
 			_classCallCheck(this, Lutefisk);
 
-			var _this24 = _possibleConstructorReturn(this, _Drinkable2.call(this, 0, { ch: "%", fg: "#ff0", name: "lutefisk" }));
+			var _this25 = _possibleConstructorReturn(this, _Drinkable2.call(this, 0, { ch: "%", fg: "#ff0", name: "lutefisk" }));
 
-			_this24._visual.name = "lutefisk"; // no modifiers, sry
-			return _this24;
+			_this25._visual.name = "lutefisk"; // no modifiers, sry
+			return _this25;
 		}
 
 		Lutefisk.prototype.pick = function pick(who) {
@@ -1422,10 +1441,10 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Gold() {
 			_classCallCheck(this, Gold);
 
-			var _this26 = _possibleConstructorReturn(this, _Item3.call(this, "gold", { ch: "$", fg: "#fc0", name: "golden coin" }));
+			var _this27 = _possibleConstructorReturn(this, _Item3.call(this, "gold", { ch: "$", fg: "#fc0", name: "golden coin" }));
 
-			_this26.amount = 1;
-			return _this26;
+			_this27.amount = 1;
+			return _this27;
 		}
 
 		Gold.prototype.pick = function pick(who) {
@@ -1560,14 +1579,14 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Autonomous(visual) {
 			_classCallCheck(this, Autonomous);
 
-			var _this27 = _possibleConstructorReturn(this, _Being.call(this, visual));
+			var _this28 = _possibleConstructorReturn(this, _Being.call(this, visual));
 
-			_this27.ai = {
+			_this28.ai = {
 				hostile: ROT.RNG.getUniform() < HOSTILE_CHANCE,
 				mobile: true
 			};
-			_this27.inventory.addItem(new Gold());
-			return _this27;
+			_this28.inventory.addItem(new Gold());
+			return _this28;
 		}
 
 		Autonomous.prototype.act = function act() {
@@ -1587,11 +1606,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Rat() {
 			_classCallCheck(this, Rat);
 
-			var _this28 = _possibleConstructorReturn(this, _Autonomous.call(this, { ch: "r", fg: "#aaa", name: "rat" }));
+			var _this29 = _possibleConstructorReturn(this, _Autonomous.call(this, { ch: "r", fg: "#aaa", name: "rat" }));
 
-			_this28.mana = _this28.maxmana = 0;
-			_this28.hp = _this28.maxhp = 1;
-			return _this28;
+			_this29.mana = _this29.maxmana = 0;
+			_this29.hp = _this29.maxhp = 1;
+			return _this29;
 		}
 
 		return Rat;
@@ -1605,11 +1624,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Bat() {
 			_classCallCheck(this, Bat);
 
-			var _this29 = _possibleConstructorReturn(this, _Autonomous2.call(this, { ch: "b", fg: "#a83", name: "bat" }));
+			var _this30 = _possibleConstructorReturn(this, _Autonomous2.call(this, { ch: "b", fg: "#a83", name: "bat" }));
 
-			_this29.mana = _this29.maxmana = 0;
-			_this29.hp = _this29.maxhp = 10;
-			return _this29;
+			_this30.mana = _this30.maxmana = 0;
+			_this30.hp = _this30.maxhp = 10;
+			return _this30;
 		}
 
 		return Bat;
@@ -1623,10 +1642,10 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Goblin() {
 			_classCallCheck(this, Goblin);
 
-			var _this30 = _possibleConstructorReturn(this, _Autonomous3.call(this, { ch: "g", fg: "#33a", name: "goblin" }));
+			var _this31 = _possibleConstructorReturn(this, _Autonomous3.call(this, { ch: "g", fg: "#33a", name: "goblin" }));
 
-			_this30.mana = _this30.maxmana = 10;
-			return _this30;
+			_this31.mana = _this31.maxmana = 10;
+			return _this31;
 		}
 
 		return Goblin;
@@ -1640,13 +1659,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Orc() {
 			_classCallCheck(this, Orc);
 
-			var _this31 = _possibleConstructorReturn(this, _Autonomous4.call(this, { ch: "o", fg: "#3a3", name: "orc" }));
+			var _this32 = _possibleConstructorReturn(this, _Autonomous4.call(this, { ch: "o", fg: "#3a3", name: "orc" }));
 
-			_this31.mana = _this31.maxmana = 20;
+			_this32.mana = _this32.maxmana = 20;
 			if (ROT.RNG.getUniform() > 0.5) {
-				_this31.inventory.addItem(new Dagger());
+				_this32.inventory.addItem(new Dagger());
 			}
-			return _this31;
+			return _this32;
 		}
 
 		return Orc;
@@ -1660,13 +1679,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function OrcWitch() {
 			_classCallCheck(this, OrcWitch);
 
-			var _this32 = _possibleConstructorReturn(this, _Autonomous5.call(this, { ch: "O", fg: "#33a", name: "orcish witch" }));
+			var _this33 = _possibleConstructorReturn(this, _Autonomous5.call(this, { ch: "O", fg: "#33a", name: "orcish witch" }));
 
-			_this32.sex = 1;
+			_this33.sex = 1;
 			if (ROT.RNG.getUniform() > 0.5) {
-				_this32.inventory.addItem(new Helmet());
+				_this33.inventory.addItem(new Helmet());
 			}
-			return _this32;
+			return _this33;
 		}
 
 		return OrcWitch;
@@ -1680,15 +1699,15 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Skeleton() {
 			_classCallCheck(this, Skeleton);
 
-			var _this33 = _possibleConstructorReturn(this, _Autonomous6.call(this, { ch: "s", fg: "#eee", name: "skeleton" }));
+			var _this34 = _possibleConstructorReturn(this, _Autonomous6.call(this, { ch: "s", fg: "#eee", name: "skeleton" }));
 
-			_this33.hp = _this33.maxhp = 25;
+			_this34.hp = _this34.maxhp = 25;
 			if (ROT.RNG.getUniform() > 0.5) {
-				_this33.inventory.addItem(new Dagger());
+				_this34.inventory.addItem(new Dagger());
 			} else {
-				_this33.inventory.addItem(new Sword());
+				_this34.inventory.addItem(new Sword());
 			}
-			return _this33;
+			return _this34;
 		}
 
 		return Skeleton;
@@ -1702,16 +1721,16 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Ogre() {
 			_classCallCheck(this, Ogre);
 
-			var _this34 = _possibleConstructorReturn(this, _Autonomous7.call(this, { ch: "O", fg: "#3a3", name: "ogre" }));
+			var _this35 = _possibleConstructorReturn(this, _Autonomous7.call(this, { ch: "O", fg: "#3a3", name: "ogre" }));
 
-			_this34.hp = _this34.maxhp = 30;
+			_this35.hp = _this35.maxhp = 30;
 			if (ROT.RNG.getUniform() > 0.5) {
-				_this34.inventory.addItem(new Mace());
+				_this35.inventory.addItem(new Mace());
 			}
 			if (ROT.RNG.getUniform() > 0.5) {
-				_this34.inventory.addItem(new Shield());
+				_this35.inventory.addItem(new Shield());
 			}
-			return _this34;
+			return _this35;
 		}
 
 		return Ogre;
@@ -1739,12 +1758,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Spider() {
 			_classCallCheck(this, Spider);
 
-			var _this36 = _possibleConstructorReturn(this, _Autonomous9.call(this, { ch: "s", fg: "#c66", name: "spider" }));
+			var _this37 = _possibleConstructorReturn(this, _Autonomous9.call(this, { ch: "s", fg: "#c66", name: "spider" }));
 
-			_this36.hp = _this36.maxhp = 10;
-			_this36.mana = _this36.maxmana = 0;
-			_this36.attack = 15;
-			return _this36;
+			_this37.hp = _this37.maxhp = 10;
+			_this37.mana = _this37.maxmana = 0;
+			_this37.attack = 15;
+			return _this37;
 		}
 
 		return Spider;
@@ -1758,12 +1777,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Snake() {
 			_classCallCheck(this, Snake);
 
-			var _this37 = _possibleConstructorReturn(this, _Autonomous10.call(this, { ch: "s", fg: "#6c6", name: "poisonous snake" }));
+			var _this38 = _possibleConstructorReturn(this, _Autonomous10.call(this, { ch: "s", fg: "#6c6", name: "poisonous snake" }));
 
-			_this37.hp = _this37.maxhp = 10;
-			_this37.mana = _this37.maxmana = 0;
-			_this37.attack = 15;
-			return _this37;
+			_this38.hp = _this38.maxhp = 10;
+			_this38.mana = _this38.maxmana = 0;
+			_this38.attack = 15;
+			return _this38;
 		}
 
 		return Snake;
@@ -1777,20 +1796,20 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Minotaur() {
 			_classCallCheck(this, Minotaur);
 
-			var _this38 = _possibleConstructorReturn(this, _Autonomous11.call(this, { ch: "M", fg: "#ca7", name: "minotaur warrior" }));
+			var _this39 = _possibleConstructorReturn(this, _Autonomous11.call(this, { ch: "M", fg: "#ca7", name: "minotaur warrior" }));
 
-			_this38.hp = _this38.maxhp = 30;
-			_this38.mana = _this38.maxmana = 30;
+			_this39.hp = _this39.maxhp = 30;
+			_this39.mana = _this39.maxmana = 30;
 			if (ROT.RNG.getUniform() > 0.5) {
-				_this38.inventory.addItem(new Mace());
+				_this39.inventory.addItem(new Mace());
 			}
 			if (ROT.RNG.getUniform() > 0.5) {
-				_this38.inventory.addItem(new Shield());
+				_this39.inventory.addItem(new Shield());
 			}
 			if (ROT.RNG.getUniform() > 0.5) {
-				_this38.inventory.addItem(new Armor());
+				_this39.inventory.addItem(new Armor());
 			}
-			return _this38;
+			return _this39;
 		}
 
 		return Minotaur;
@@ -1804,12 +1823,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Tree$1() {
 			_classCallCheck(this, Tree$1);
 
-			var _this39 = _possibleConstructorReturn(this, _Autonomous12.call(this, { ch: "T", fg: "#3c3", name: "animated tree" }));
+			var _this40 = _possibleConstructorReturn(this, _Autonomous12.call(this, { ch: "T", fg: "#3c3", name: "animated tree" }));
 
-			_this39.hp = _this39.maxhp = 30;
-			_this39.mana = _this39.maxmana = 30;
-			_this39.ai.mobile = false;
-			return _this39;
+			_this40.hp = _this40.maxhp = 30;
+			_this40.mana = _this40.maxmana = 30;
+			_this40.ai.mobile = false;
+			return _this40;
 		}
 
 		return Tree$1;
@@ -1831,11 +1850,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				name: race + " " + type
 			};
 
-			var _this40 = _possibleConstructorReturn(this, _Autonomous13.call(this, visual));
+			var _this41 = _possibleConstructorReturn(this, _Autonomous13.call(this, visual));
 
-			_this40.sex = 2;
-			_this40.ai.hostile = false;
-			return _this40;
+			_this41.sex = 2;
+			_this41.ai.hostile = false;
+			return _this41;
 		}
 
 		Hero.prototype.getChat = function getChat() {
@@ -1981,7 +2000,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		});
 	}
 
-	var COMBAT_OPTIONS = (_COMBAT_OPTIONS = {}, _COMBAT_OPTIONS[ATTACK_1] = 10, _COMBAT_OPTIONS[ATTACK_2] = 10, _COMBAT_OPTIONS[MAGIC_1] = 10, _COMBAT_OPTIONS[MAGIC_2] = 10, _COMBAT_OPTIONS);
+	var COMBAT_OPTIONS = (_COMBAT_OPTIONS = {}, _COMBAT_OPTIONS[ATTACK_1] = 2, _COMBAT_OPTIONS[ATTACK_2] = 2, _COMBAT_OPTIONS[MAGIC_1] = 2, _COMBAT_OPTIONS[MAGIC_2] = 2, _COMBAT_OPTIONS);
 
 	var TUTORIAL = {
 		staircase: false,
@@ -1996,13 +2015,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function PC() {
 			_classCallCheck(this, PC);
 
-			var _this41 = _possibleConstructorReturn(this, _Being2.call(this, { ch: "@", fg: "#fff", name: "you" }));
+			var _this42 = _possibleConstructorReturn(this, _Being2.call(this, { ch: "@", fg: "#fff", name: "you" }));
 
-			_this41._resolve = null; // end turn
-			_this41.fov = {};
+			_this42._resolve = null; // end turn
+			_this42.fov = {};
 
-			subscribe("topology-change", _this41);
-			return _this41;
+			subscribe("topology-change", _this42);
+			return _this42;
 		}
 
 		PC.prototype.describeThe = function describeThe() {
@@ -2025,18 +2044,18 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			var options = Object.assign({}, COMBAT_OPTIONS);
 			this.inventory.getItems().forEach(function (item) {
 				if (item.combat) {
-					options[item.combat] += 2;
+					options[item.combat] += 1;
 				}
 			});
 			return ROT.RNG.getWeightedValue(options);
 		};
 
 		PC.prototype.act = function act() {
-			var _this42 = this;
+			var _this43 = this;
 
 			pause();
 			var promise = new Promise(function (resolve) {
-				return _this42._resolve = resolve;
+				return _this43._resolve = resolve;
 			});
 
 			promise = promise.then(function () {
@@ -2096,6 +2115,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			// getEntity not possible, because *we* are standing here :)
 
+			var cell = this._level.getCell(this._xy);
+			if (cell == BRAMBLES && ROT.RNG.getUniform() < BRAMBLE_CHANCE) {
+				add$1("You make your way through %s. Ouch! You are hurt by a thorn.", cell);
+				this.adjustStat("hp", -1);
+			}
+
 			var item = this._level.getItem(this._xy);
 			if (item) {
 				add$1("%A is lying here.", item);
@@ -2106,7 +2131,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				return;
 			}
 
-			var cell = this._level.getCell(this._xy);
 			if (cell instanceof Door) {
 				add$1("You pass through %a.", cell);
 			} else if (cell instanceof Staircase) {
@@ -2166,11 +2190,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		};
 
 		PC.prototype._attack = function _attack(being) {
-			var _this43 = this;
+			var _this44 = this;
 
 			add$1("You attack %the.", being);
 			start(being).then(function () {
-				return _this43._resolve();
+				return _this44._resolve();
 			});
 		};
 
@@ -2180,24 +2204,24 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		};
 
 		PC.prototype._interactWithBeing = function _interactWithBeing(being) {
-			var _this44 = this;
+			var _this45 = this;
 
 			var callbacks = [];
 			var options = [];
 
 			callbacks.push(function () {
-				return _this44._kiss(being);
+				return _this45._kiss(being);
 			});
 			options.push("Kiss %it gently".format(being));
 
 			callbacks.push(function () {
-				return _this44._chat(being);
+				return _this45._chat(being);
 			});
 			options.push("Talk to %it".format(being));
 
 			if (being instanceof Hero) {} else {
 				callbacks.push(function () {
-					return _this44._attack(being);
+					return _this45._attack(being);
 				});
 				options.push("Attack %it".format(being));
 			}
@@ -2299,12 +2323,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		};
 
 		Board.prototype.fall = function fall() {
-			var _this45 = this;
+			var _this46 = this;
 
 			var animation = new Animation();
 
 			this._data.forEach(function (col, index) {
-				_this45._fallColumn(index, animation);
+				_this46._fallColumn(index, animation);
 			});
 
 			return animation;
@@ -2382,7 +2406,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 
 		Board.prototype.extractSegment = function extractSegment(xy) {
-			var _this46 = this;
+			var _this47 = this;
 
 			var segment = [];
 			var value = this.at(xy).value;
@@ -2391,12 +2415,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				if (xy.x < 0 || xy.y < 0 || xy.x >= W || xy.y >= H) {
 					return;
 				}
-				var cell = _this46.at(xy);
+				var cell = _this47.at(xy);
 				if (!cell || cell.value != value) {
 					return;
 				}
 
-				_this46.set(xy, null);
+				_this47.set(xy, null);
 				segment.push(xy.clone());
 				tryIt(xy.plus(new XY(1, 0)));
 				tryIt(xy.plus(new XY(-1, 0)));
@@ -3185,7 +3209,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		}
 
 		Level.prototype.activate = function activate(xy, who) {
-			var _this47 = this;
+			var _this48 = this;
 
 			if (this.danger == LAST_LEVEL) {
 				this._outro(who);
@@ -3199,7 +3223,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			who.moveTo(xy, this); // put to new
 
 			var beings = Object.keys(this._beings).map(function (key) {
-				return _this47._beings[key];
+				return _this48._beings[key];
 			}).filter(function (b) {
 				return b;
 			}); /* filter because of empty values */
@@ -3221,12 +3245,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		};
 
 		Level.prototype.trim = function trim() {
-			var _this48 = this;
+			var _this49 = this;
 
 			Object.keys(this._cells).forEach(function (key) {
 				var xy = XY.fromString(key);
-				if (!_this48.isInside(xy)) {
-					delete _this48._cells[key];
+				if (!_this49.isInside(xy)) {
+					delete _this49._cells[key];
 				}
 			});
 		};
@@ -3469,7 +3493,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 	var levels = {};
 
-	function decorateDebris(level) {
+	function decorateBrambles(level) {
 		var radius = dangerToRadius(level.danger);
 		var dist = ROT.RNG.getUniformInt(2 * radius, 5 * radius);
 		var angle = ROT.RNG.getUniform() * 2 * Math.PI;
@@ -3488,7 +3512,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			if (level.getEntity(xy) != WALL) {
 				continue;
 			}
-			level.setCell(xy, ROOM);
+			level.setCell(xy, BRAMBLES);
 		}
 	}
 
@@ -3579,6 +3603,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 	}
 
 	function decorateFull(level) {
+		decorateBrambles(level);
+
 		var features = {
 			item: 4,
 			potion: 3,
@@ -3637,8 +3663,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			var down = new Staircase(false, staircaseCallback(level.danger - 1, false));
 			level.setCell(level.start, down);
 		}
-
-		decorateDebris(level);
 
 		if (level.danger == 1) {
 			decorateFirst(level);
@@ -3783,42 +3807,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		return level;
 	}
 
-	var CELL$1 = new XY(8, 12);
-
-	function drawCell$1(ctx, xy) {
-		var color = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "#000";
-
-		ctx.fillStyle = color;
-		ctx.fillRect(xy.x, xy.y, CELL$1.x - 1, CELL$1.y - 1);
-	}
-
-	function draw$1(level) {
-		var canvas = document.createElement("canvas");
-		canvas.style.backgroundColor = "#000";
-		document.body.appendChild(canvas);
-
-		var ctx = canvas.getContext("2d");
-		var radius = dangerToRadius(level.danger);
-
-		var offset = new XY(1.5 * radius, 1 * radius).round(); // level center from canvas left-top
-		ctx.canvas.width = CELL$1.x * 2 * offset.x;
-		ctx.canvas.height = CELL$1.y * 2 * offset.y;
-
-		var xy = new XY();
-		for (xy.x = -offset.x; xy.x <= offset.x; xy.x++) {
-			for (xy.y = -offset.y; xy.y <= offset.y; xy.y++) {
-				var visual = level.getEntity(xy).getVisual();
-
-				var pxy = xy.plus(offset).scale(CELL$1.x, CELL$1.y);
-				drawCell$1(ctx, pxy, visual.fg);
-			}
-		}
-
-		return canvas;
-	}
+	// import { draw } from "ui/map/debug.js"
 
 	var seed = Date.now();
-	seed = 3;
 	console.log("seed", seed);
 	ROT.RNG.setSeed(seed);
 
@@ -3839,8 +3830,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 		var level = generate(1);
 		level.activate(level.start, pc);
-		var canvas = draw$1(level);
-		canvas.style.left = canvas.style.top = 0;
+
+		//	let canvas = draw(level);
+		//	canvas.style.left = canvas.style.top = 0;
 
 		loop();
 	}

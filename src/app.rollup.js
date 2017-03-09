@@ -267,6 +267,14 @@ function init$2(n) {
 	pause();
 }
 
+class Brambles extends Entity {
+	constructor() {
+		super({ch:"%", fg:"#483", name:"dense brambles"});
+	}
+
+	describeA() { return this.toString(); }
+}
+
 class Princess extends Entity {
 	constructor() {
 		super({ch:"P", fg:"#ff0", name:"princess"});
@@ -358,6 +366,7 @@ class Staircase extends Entity {
 const ROOM = new Floor();
 const CORRIDOR = new Floor();
 const WALL = new Wall();
+const BRAMBLES = new Brambles();
 
 const IT = ["it", "her", "him"];
 
@@ -456,6 +465,8 @@ const POTION_MANA = 10;
 
 const COMBAT_MODIFIER = 0.4;
 const HOSTILE_CHANCE = 0.7;
+
+const BRAMBLE_CHANCE = 0.5;
 
 const ATTACK_1 = "a1";
 const ATTACK_2 = "a2";
@@ -1084,10 +1095,10 @@ function choice(options) {
 }
 
 let COMBAT_OPTIONS = {
-	[ATTACK_1]: 10,
-	[ATTACK_2]: 10,
-	[MAGIC_1]: 10,
-	[MAGIC_2]: 10
+	[ATTACK_1]: 2,
+	[ATTACK_2]: 2,
+	[MAGIC_1]: 2,
+	[MAGIC_2]: 2
 };
 
 const TUTORIAL = {
@@ -1114,7 +1125,7 @@ class PC extends Being {
 	getCombatOption() {
 		let options = Object.assign({}, COMBAT_OPTIONS);
 		this.inventory.getItems().forEach(item => {
-			if (item.combat) { options[item.combat] += 2; }
+			if (item.combat) { options[item.combat] += 1; }
 		});
 		return ROT.RNG.getWeightedValue(options);
 	}
@@ -1172,6 +1183,12 @@ class PC extends Being {
 
 		// getEntity not possible, because *we* are standing here :)
 
+		let cell = this._level.getCell(this._xy);
+		if (cell == BRAMBLES && ROT.RNG.getUniform() < BRAMBLE_CHANCE) {
+			add$1("You make your way through %s. Ouch! You are hurt by a thorn.", cell);
+			this.adjustStat("hp", -1);
+		}
+
 		let item = this._level.getItem(this._xy);
 		if (item) {
 			add$1("%A is lying here.", item);
@@ -1182,7 +1199,6 @@ class PC extends Being {
 			return;
 		}
 
-		let cell = this._level.getCell(this._xy);
 		if (cell instanceof Door) {
 			add$1("You pass through %a.", cell);
 		} else if (cell instanceof Staircase) {
@@ -2477,7 +2493,7 @@ function furthestRoom(rooms, start) {
 
 const levels = {};
 
-function decorateDebris(level) {
+function decorateBrambles(level) {
 	let radius = dangerToRadius(level.danger);
 	let dist = ROT.RNG.getUniformInt(2*radius, 5*radius);
 	let angle = ROT.RNG.getUniform()*2*Math.PI;
@@ -2492,7 +2508,7 @@ function decorateDebris(level) {
 		let xy = center.plus(new XY(Math.cos(a), Math.sin(a)).scale(dist)).round();
 		if (!level.isInside(xy)) { continue; }
 		if (level.getEntity(xy) != WALL) { continue; }
-		level.setCell(xy, ROOM);
+		level.setCell(xy, BRAMBLES);
 	}
 }
 
@@ -2571,6 +2587,8 @@ function decorateFirst(level) {
 }
 
 function decorateFull(level) {
+	decorateBrambles(level);
+
 	let features = {
 		item: 4,
 		potion: 3,
@@ -2622,8 +2640,6 @@ function decorateRegular(level) {
 		let down = new Staircase(false, staircaseCallback(level.danger-1, false));
 		level.setCell(level.start, down);
 	}
-
-	decorateDebris(level);
 
 	if (level.danger == 1) {
 		decorateFirst(level);
@@ -2755,40 +2771,9 @@ function generate(danger) {
 	return level;
 }
 
-const CELL$1 = new XY(8, 12);
-
-function drawCell$1(ctx, xy, color="#000") {
-	ctx.fillStyle = color;
-	ctx.fillRect(xy.x, xy.y, CELL$1.x-1, CELL$1.y-1);
-}
-
-function draw$1(level) {
-	let canvas = document.createElement("canvas");
-	canvas.style.backgroundColor = "#000";
-	document.body.appendChild(canvas);
-
-	let ctx = canvas.getContext("2d");
-	let radius = dangerToRadius(level.danger);
-
-	let offset = new XY(1.5*radius, 1*radius).round(); // level center from canvas left-top
-	ctx.canvas.width = CELL$1.x * 2 * offset.x;
-	ctx.canvas.height = CELL$1.y * 2 * offset.y;
-
-	let xy = new XY();
-	for (xy.x=-offset.x; xy.x<=offset.x; xy.x++) {
-		for (xy.y=-offset.y; xy.y<=offset.y; xy.y++) {
-			let visual = level.getEntity(xy).getVisual();
-
-			let pxy = xy.plus(offset).scale(CELL$1.x, CELL$1.y);
-			drawCell$1(ctx, pxy, visual.fg);
-		}
-	}
-
-	return canvas;
-}
+// import { draw } from "ui/map/debug.js"
 
 let seed = Date.now();
-seed = 3;
 console.log("seed", seed);
 ROT.RNG.setSeed(seed);
 
@@ -2809,8 +2794,9 @@ function init$$1() {
 
 	let level = generate(1);
 	level.activate(level.start, pc);
-	let canvas = draw$1(level);
-	canvas.style.left = canvas.style.top = 0;
+
+//	let canvas = draw(level);
+//	canvas.style.left = canvas.style.top = 0;
 
 	loop();
 }

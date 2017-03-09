@@ -8,3 +8,5 @@ export const POTION_MANA = 10;
 
 export const COMBAT_MODIFIER = 0.4;
 export const HOSTILE_CHANCE = 0.7;
+
+export const BRAMBLE_CHANCE = 0.5;
