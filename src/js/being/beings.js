@@ -12,7 +12,8 @@ const HERO_CHATS = [
 	"Some monsters in this tower give a pretty hard fight!",
 	"Look out for potions, they might save your butt.",
 	"So, you are also looking for that sleeping princess?",
-	"A sharp sword is better than a blunt one." // FIXME dalsi
+	"A sharp sword is better than a blunt one.",
+	"I used to be an adventurer like you. But then I got hurt on a thorn..."
 ];
 
 class Autonomous extends Being {
@@ -177,6 +178,7 @@ export class Hero extends Autonomous {
 				"You can do whatever you want here, but beware - no kissing!",
 				"We only have one rule here: no kissing!",
 				"Make sure you don't wake her up!",
+				"Sssh! She is sleeping, don't you see?",
 				"I see, another lucky adventurer!"
 			].random();
 		} else {

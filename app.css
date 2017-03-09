@@ -123,6 +123,11 @@ ul {
   font-size: 24px;
   vertical-align: middle;
 }
+@media (max-width: 1130px) and (max-height: 610px) {
+  #combat li span {
+    font-size: 18px;
+  }
+}
 #combat li:not(.inactive) span {
   font-weight: bold;
 }

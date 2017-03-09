@@ -30,7 +30,7 @@ export class Drinkable extends Item {
 		this._strength = strength;
 
 		if (ROT.RNG.getUniform() > 0.5) {
-			let diff = Math.round(strength/5);
+			let diff = Math.round(strength/2);
 			if (ROT.RNG.getUniform() > 0.5) { diff *= -1; }
 			this._strength += diff;
 			this._visual.name = `${diff > 0 ? "strong" : "weak"} ${this._visual.name}`;

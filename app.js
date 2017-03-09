@@ -1173,7 +1173,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			_this14._strength = strength;
 
 			if (ROT.RNG.getUniform() > 0.5) {
-				var diff = Math.round(strength / 5);
+				var diff = Math.round(strength / 2);
 				if (ROT.RNG.getUniform() > 0.5) {
 					diff *= -1;
 				}
@@ -1574,8 +1574,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 	var HERO_RACES = ["dwarven", "halfling", "orcish", "human", "elvish", "noble"];
 	var HERO_TYPES = ["knight", "adventurer", "hero", "explorer"];
-	var HERO_CHATS = ["Hi there, fellow adventurer!", "I wonder how many tower floors are there...", "Some monsters in this tower give a pretty hard fight!", "Look out for potions, they might save your butt.", "So, you are also looking for that sleeping princess?", "A sharp sword is better than a blunt one." // FIXME dalsi
-	];
+	var HERO_CHATS = ["Hi there, fellow adventurer!", "I wonder how many tower floors are there...", "Some monsters in this tower give a pretty hard fight!", "Look out for potions, they might save your butt.", "So, you are also looking for that sleeping princess?", "A sharp sword is better than a blunt one.", "I used to be an adventurer like you. But then I got hurt on a thorn..."];
 
 	var Autonomous = function (_Being) {
 		_inherits(Autonomous, _Being);
@@ -1866,7 +1865,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 		Hero.prototype.getChat = function getChat() {
 			if (this._level.danger == LAST_LEVEL) {
-				return ["You can do whatever you want here, but beware - no kissing!", "We only have one rule here: no kissing!", "Make sure you don't wake her up!", "I see, another lucky adventurer!"].random();
+				return ["You can do whatever you want here, but beware - no kissing!", "We only have one rule here: no kissing!", "Make sure you don't wake her up!", "Sssh! She is sleeping, don't you see?", "I see, another lucky adventurer!"].random();
 			} else {
 				return HERO_CHATS.random();
 			}
