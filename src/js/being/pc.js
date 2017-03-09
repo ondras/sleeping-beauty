@@ -6,8 +6,9 @@ import { ATTACK_1, ATTACK_2, MAGIC_1, MAGIC_2 } from "combat/types.js";
 import * as combat from "combat/combat.js";
 
 import * as keyboard from "util/keyboard.js";
-import * as rules from "rules.js";
+import * as actors from "util/actors.js";
 import * as pubsub from "util/pubsub.js";
+import * as rules from "rules.js";
 import * as log from "ui/log.js";
 import * as cells from "level/cells.js";
 import choice from "ui/choice.js";
@@ -30,7 +31,6 @@ class PC extends Being {
 	constructor() {
 		super({ch:"@", fg:"#fff", name:"you"});
 		this._resolve = null; // end turn
-		this.blocks = BLOCKS_NONE; // in order to see stuff via FOV...
 		this.fov = {};
 
 		pubsub.subscribe("topology-change", this);
@@ -38,6 +38,8 @@ class PC extends Being {
 
 	describeThe() { return this.toString(); }
 	describeA() { return this.toString(); }
+	describeIt() { return this.toString(); }
+	describeVerb(verb) { return verb; }
 
 	getCombatOption() {
 		return ROT.RNG.getWeightedValue(COMBAT_OPTIONS);
@@ -79,6 +81,13 @@ class PC extends Being {
 	adjustStat(stat, diff) {
 		super.adjustStat(stat, diff);
 		pubsub.publish("status-change");
+	}
+
+	die() {
+		super.die();
+		actors.clear();
+		log.pause();
+		log.add("Game over! Reload the page to try again...");
 	}
 
 	moveTo(xy, level) {

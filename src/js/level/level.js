@@ -1,13 +1,27 @@
 import XY from "util/xy.js";
 import { RATIO } from "conf.js";
 
+import * as rules from "rules.js";
 import * as actors from "util/actors.js";
 import * as cells from "./cells.js";
 import * as pubsub from "util/pubsub.js";
 import * as map from "ui/map/map.js";
+import * as log from "ui/log.js";
+
+const D1_RADIUS = 15;
+const D2_RADIUS = 30;
+const LAST1_RADIUS = 20;
+const LAST_RADIUS = 10;
 
 export function dangerToRadius(danger) {
-	return 30; // fixme
+	if (danger == 1) { return D1_RADIUS; }
+	if (danger == rules.LAST_LEVEL) { return LAST_RADIUS; }
+
+	let diff = LAST1_RADIUS-D2_RADIUS;
+	let regularCount = rules.LAST_LEVEL-2;
+	if (regularCount == 1) { return D2_RADIUS; }
+
+	return D2_RADIUS + Math.round((danger-2)/(regularCount-1) * diff);
 }
 
 export default class Level {
@@ -21,6 +35,11 @@ export default class Level {
 	}
 
 	activate(xy, who) {
+		if (this.danger == rules.LAST_LEVEL) { 
+			this._outro(who);
+		} else {
+			log.add(`Welcome to tower floor ${this.danger}.`);
+		}
 		actors.clear();
 
 		who.moveTo(null); // remove from old
@@ -29,6 +48,8 @@ export default class Level {
 
 		let beings = Object.keys(this._beings).map(key => this._beings[key]).filter(b => b); /* filter because of empty values */
 		beings.forEach(being => actors.add(being));
+
+		pubsub.publish("status-change");
 	}
 
 	isInside(xy) {
@@ -126,5 +147,21 @@ export default class Level {
 				this.setCell(xy, new cells.Door(closed));
 			}
 		}
+	}
+
+	_outro(who) {
+		log.add("Welcome to the last floor!");
+		log.add("You finally managed to reach the princess and finish the game.");
+		log.add("Congratulations!");
+		log.pause();
+
+		let gold = who.inventory.getItemByType("gold");
+		if (gold) {
+			let color = gold.getVisual().fg;
+			log.add(`Furthermore, you were able to accumulate a total of {${color}}${gold.amount}{} golden coins.`);
+			log.pause();
+		}
+
+		log.add("The game is over now, but you are free to look around.");
 	}
 }

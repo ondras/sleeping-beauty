@@ -9,20 +9,20 @@ import * as log from "ui/log.js";
 function wander(who) {
 	let result = Promise.resolve();
 
-	if (ROT.RNG.getUniform() > rules.AI_IDLE) { return result; }
+	if (ROT.RNG.getUniform() < rules.AI_IDLE) { return result; }
 
 	let level = who.getLevel();
+	let xy = who.getXY();
 
 	let dirs = DIRS.filter(dxy => {
-		let entity = level.getEntity(who.getXY().plus(dxy));
+		let entity = level.getEntity(xy.plus(dxy));
 		return entity.blocks < BLOCKS_MOVEMENT;
 	});
 	
 	if (!dirs.length) { return result; }
 	
 	let dir = dirs.random();
-	let xy = who.getXY().plus(dir);
-	who.moveTo(xy);
+	who.moveTo(xy.plus(dir));
 	return result;
 }
 
@@ -51,18 +51,31 @@ function getCloserToPC(who) {
 	return Promise.resolve();
 }
 
-function attack(who) {
+function actHostile(who) {
 	let dist = who.getXY().dist8(pc.getXY());
 	if (dist == 1) {
 		log.add("%A attacks you!", who);
 		return combat.start(who);
-	} else if (dist <= rules.AI_RANGE) {
+	}
+
+	if (!who.ai.mobile) { return Promise.resolve(); }
+
+	if (dist <= rules.AI_RANGE) {
 		return getCloserToPC(who);
 	} else {
 		return wander(who);
 	}
 }
 
-export function actEnemy(who) {
-	return attack(who);
+function actNonHostile(who) {
+	if (!who.ai.mobile) { return Promise.resolve(); }
+	return wander(who);
+}
+
+export function act(who) {
+	if (who.ai.hostile) {
+		return actHostile(who);
+	} else {
+		return actNonHostile(who);
+	}
 }

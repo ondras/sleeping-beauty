@@ -9,6 +9,8 @@ export default class Being extends Entity {
 		this.blocks = BLOCKS_MOVEMENT;
 		this._xy = null;
 		this._level = null;
+		this.attack = 0;
+		this.defense = 0;
 
 		this.inventory = new Inventory();
 
@@ -21,6 +23,14 @@ export default class Being extends Entity {
 	getXY() { return this._xy; }
 	getLevel() { return this._level; }
 
+	getAttack() {
+		return this.attack; // fixme items
+	}
+
+	getDefense() {
+		return this.defense; // fixme items
+	}
+
 	adjustStat(stat, diff) {
 		this[stat] += diff;
 		this[stat] = Math.max(this[stat], 0);
@@ -29,9 +39,18 @@ export default class Being extends Entity {
 	}
 
 	die() {
+		let level = this._level;
+		let xy = this._xy;
+
 		this.moveTo(null);
 		actors.remove(this);
-		// fixme drop stuff?
+		
+		let items = this.inventory.getItems();
+		if (items.length > 0) {
+			let item = items.random();
+			this.inventory.removeItem(item);
+			level.setItem(xy, item);
+		}
 	}
 
 	act() {
@@ -52,4 +71,15 @@ export default class Being extends Entity {
 		
 		return this;
 	}
+
+	describeIt() {
+    	return "it";
+	}
+
+	describeVerb(verb) {
+	    return `${verb}${verb.charAt(verb.length-1) == "s" || verb == "do" ? "es" : "s"}`;
+	}
 }
+
+String.format.map.verb = "describeVerb";
+String.format.map.it = "describeIt";

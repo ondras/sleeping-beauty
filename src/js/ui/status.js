@@ -1,3 +1,4 @@
+// fixme ukazovat level
 import pc from "being/pc.js";
 import * as pubsub from "util/pubsub.js";
 
@@ -10,7 +11,11 @@ export function init(n) {
 }
 
 export function update() {
-	node.innerHTML = "You have:";
+	let str = "";
+	let level = pc.getLevel();
+	if (level) {str = `Tower floor ${level.danger}. `; }
+	str = `${str}You have:`;
+	node.innerHTML = str;
 
 	let ul = document.createElement("ul");
 	node.appendChild(ul);

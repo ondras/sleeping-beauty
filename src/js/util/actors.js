@@ -14,6 +14,7 @@ export function remove(actor) {
 }
 
 export function loop() {
+	if (!queue.length) { return; } // endgame
 	let actor = queue.shift();
 	queue.push(actor);
 	actor.act().then(loop);

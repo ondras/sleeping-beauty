@@ -19,6 +19,15 @@ function cloneRoom(room) {
 	}
 }
 
+export function centerRoom(halfSize) {
+	return {
+		neighbors: [],
+		center: new XY(0, 0),
+		lt: halfSize.scale(-1),
+		rb: halfSize.scale(1)
+	}
+}
+
 export function roomNearTo(xy) {
 	let cx = xy.x + ROT.RNG.getUniformInt(-DIST, DIST);
 	let cy = xy.y + ROT.RNG.getUniformInt(-DIST, DIST);

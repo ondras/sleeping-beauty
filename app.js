@@ -158,6 +158,7 @@ class Entity {
 	getVisual() { return this._visual; }
 
 	toString() { return this._visual.name; }
+
 	describeThe() { return `the ${this}`; }
 	describeA() {
 		let first = this._visual.name.charAt(0);
@@ -168,11 +169,6 @@ class Entity {
 
 String.format.map.the = "describeThe";
 String.format.map.a = "describeA";
-
-// being-specific
-String.format.map.he = "describeHe";
-String.format.map.his = "describeHis";
-String.format.map.him = "describeHim";
 
 const storage = Object.create(null);
 
@@ -233,6 +229,7 @@ function remove(actor) {
 }
 
 function loop() {
+	if (!queue.length) { return; } // endgame
 	let actor = queue.shift();
 	queue.push(actor);
 	actor.act().then(loop);
@@ -244,6 +241,8 @@ class Being extends Entity {
 		this.blocks = BLOCKS_MOVEMENT;
 		this._xy = null;
 		this._level = null;
+		this.attack = 0;
+		this.defense = 0;
 
 		this.inventory = new Inventory();
 
@@ -256,6 +255,14 @@ class Being extends Entity {
 	getXY() { return this._xy; }
 	getLevel() { return this._level; }
 
+	getAttack() {
+		return this.attack; // fixme items
+	}
+
+	getDefense() {
+		return this.defense; // fixme items
+	}
+
 	adjustStat(stat, diff) {
 		this[stat] += diff;
 		this[stat] = Math.max(this[stat], 0);
@@ -264,9 +271,18 @@ class Being extends Entity {
 	}
 
 	die() {
+		let level = this._level;
+		let xy = this._xy;
+
 		this.moveTo(null);
 		remove(this);
-		// fixme drop stuff?
+		
+		let items = this.inventory.getItems();
+		if (items.length > 0) {
+			let item = items.random();
+			this.inventory.removeItem(item);
+			level.setItem(xy, item);
+		}
 	}
 
 	act() {
@@ -287,7 +303,18 @@ class Being extends Entity {
 		
 		return this;
 	}
+
+	describeIt() {
+    	return "it";
+	}
+
+	describeVerb(verb) {
+	    return `${verb}${verb.charAt(verb.length-1) == "s" || verb == "do" ? "es" : "s"}`;
+	}
 }
+
+String.format.map.verb = "describeVerb";
+String.format.map.it = "describeIt";
 
 let node;
 let current = null;
@@ -336,6 +363,18 @@ class Item extends Entity {
 }
 
 class Drinkable extends Item {
+	constructor(strength, visual) {
+		super("potion", visual);
+		this._strength = strength;
+
+		if (ROT.RNG.getUniform() > 0.5) {
+			let diff = Math.round(strength/5);
+			if (ROT.RNG.getUniform() > 0.5) { diff *= -1; }
+			this._strength += diff;
+			this._visual.name = `${diff > 0 ? "strong" : "weak"} ${this._visual.name}`;
+		}
+	}
+
 	pick(who) {
 		who.getLevel().setItem(who.getXY(), null);
 		add$1("You drink %the.", this);
@@ -436,8 +475,26 @@ document.addEventListener("keydown", handler);
 document.addEventListener("keypress", handler);
 
 const AI_RANGE = 7;
-const AI_IDLE = .5;
+const AI_IDLE = 0.4;
 const PC_SIGHT = 8;
+const LAST_LEVEL = 3;
+
+const POTION_HP = 10;
+const POTION_MANA = 10;
+
+class Princess extends Entity {
+	constructor() {
+		super({ch:"P", fg:"#ff0", name:"princess"});
+		this.blocks = BLOCKS_MOVEMENT;
+	}
+}
+
+class Pillar extends Entity {
+	constructor() {
+		super({ch:"T", fg:"#fff", name:"pillar"});
+		this.blocks = BLOCKS_MOVEMENT;
+	}
+}
 
 class Floor extends Entity {
 	constructor() {
@@ -564,7 +621,6 @@ class PC extends Being {
 	constructor() {
 		super({ch:"@", fg:"#fff", name:"you"});
 		this._resolve = null; // end turn
-		this.blocks = BLOCKS_NONE; // in order to see stuff via FOV...
 		this.fov = {};
 
 		subscribe("topology-change", this);
@@ -572,6 +628,8 @@ class PC extends Being {
 
 	describeThe() { return this.toString(); }
 	describeA() { return this.toString(); }
+	describeIt() { return this.toString(); }
+	describeVerb(verb) { return verb; }
 
 	getCombatOption() {
 		return ROT.RNG.getWeightedValue(COMBAT_OPTIONS);
@@ -613,6 +671,13 @@ class PC extends Being {
 	adjustStat(stat, diff) {
 		super.adjustStat(stat, diff);
 		publish("status-change");
+	}
+
+	die() {
+		super.die();
+		clear();
+		pause();
+		add$1("Game over! Reload the page to try again...");
 	}
 
 	moveTo(xy, level) {
@@ -1146,6 +1211,8 @@ function deactivate$1() {
 	node.classList.add("inactive");
 }
 
+const AMOUNTS = ["slightly", "moderately", "severely", "critically"].reverse();
+
 let tutorial = false;
 
 let board = new Board().randomize();
@@ -1162,8 +1229,33 @@ function end() {
 }
 
 function doDamage(attacker, defender, options = {}) {
-	console.log("%s attacks %s (%o)", attacker, defender, options);
-	defender.adjustStat("hp", -5);
+	if (options.isMagic) { // check mana
+		if (attacker.mana < options.power) {
+			add$1("%The %{verb,do} not have enough mana to attack.", attacker, attacker);
+			return;
+		}
+		attacker.adjustStat("mana", -options.power);
+	}
+
+	let attack = attacker.getAttack();
+	let defense = defender.getDefense();
+	let damage = attack + options.power - defense;
+
+	if (damage <= 0) {
+		add$1("%The %{verb,fail} to damage %the.", attacker, attacker, defender);
+		return;
+	}
+
+	let newHP = Math.max(0, defender.hp-damage);
+	if (newHP > 0) {
+		let frac = newHP/defender.maxhp; // >0, < maxhp
+		let amount = AMOUNTS[Math.floor(frac * AMOUNTS.length)];
+		add$1(`%The %{verb,hit} %the and ${amount} %{verb,damage} %it.`, attacker, attacker, defender, attacker, defender);
+	} else {
+		add$1(`%The %{verb,hit} %the and %{verb,kill} %it!`, attacker, attacker, defender, attacker, defender);
+	}
+
+	defender.adjustStat("hp", -damage);
 	if (defender.hp <= 0) { end(); }
 }
 
@@ -1183,7 +1275,7 @@ function activate$$1(xy) {
 		drawFull();
 	});
 
-	let power = segment.length * (segment.length+1) / 2;
+	let power = segment.length;
 	let isMagic = (value == MAGIC_1 || value == MAGIC_2);
 	let attacker = pc;
 	let defender = enemy;
@@ -1192,7 +1284,7 @@ function activate$$1(xy) {
 		defender = pc;
 	}
 
-	doDamage(attacker, defender, {isMagic});
+	doDamage(attacker, defender, {power, isMagic});
 }
 
 function checkSegments() {
@@ -1240,6 +1332,7 @@ function start(e) {
 		add$1("Combat in Sleeping Beauty happens by playing the {goldenrod}Game of Thorns{} on a square game board.");
 		add$1("Match sequences ({#fff}direction keys{} and {#fff}Enter{}) of colored blocks to perform individual actions. This includes both your attacks as well as your enemy's.");
 		add$1("Note that certain items in your inventory can modify the frequency of colors on the game board.");
+		pause();
 	}
 
 	enemy = e;
@@ -1512,6 +1605,7 @@ function start$1(n) {
 	return new Promise(r => resolve$2 = r);
 }
 
+// fixme ukazovat level
 let node$7;
 
 function init$5(n) {
@@ -1521,7 +1615,11 @@ function init$5(n) {
 }
 
 function update$1() {
-	node$7.innerHTML = "You have:";
+	let str = "";
+	let level = pc.getLevel();
+	if (level) {str = `Tower floor ${level.danger}. `; }
+	str = `${str}You have:`;
+	node$7.innerHTML = str;
 
 	let ul = document.createElement("ul");
 	node$7.appendChild(ul);
@@ -1567,8 +1665,20 @@ function buildItems() {
 	return frag;
 }
 
+const D1_RADIUS = 15;
+const D2_RADIUS = 30;
+const LAST1_RADIUS = 20;
+const LAST_RADIUS = 10;
+
 function dangerToRadius(danger) {
-	return 30; // fixme
+	if (danger == 1) { return D1_RADIUS; }
+	if (danger == LAST_LEVEL) { return LAST_RADIUS; }
+
+	let diff = LAST1_RADIUS-D2_RADIUS;
+	let regularCount = LAST_LEVEL-2;
+	if (regularCount == 1) { return D2_RADIUS; }
+
+	return D2_RADIUS + Math.round((danger-2)/(regularCount-1) * diff);
 }
 
 class Level {
@@ -1582,6 +1692,11 @@ class Level {
 	}
 
 	activate(xy, who) {
+		if (this.danger == LAST_LEVEL) { 
+			this._outro(who);
+		} else {
+			add$1(`Welcome to tower floor ${this.danger}.`);
+		}
 		clear();
 
 		who.moveTo(null); // remove from old
@@ -1590,6 +1705,8 @@ class Level {
 
 		let beings = Object.keys(this._beings).map(key => this._beings[key]).filter(b => b); /* filter because of empty values */
 		beings.forEach(being => add(being));
+
+		publish("status-change");
 	}
 
 	isInside(xy) {
@@ -1688,6 +1805,223 @@ class Level {
 			}
 		}
 	}
+
+	_outro(who) {
+		add$1("Welcome to the last floor!");
+		add$1("You finally managed to reach the princess and finish the game.");
+		add$1("Congratulations!");
+		pause();
+
+		let gold = who.inventory.getItemByType("gold");
+		if (gold) {
+			let color = gold.getVisual().fg;
+			add$1(`Furthermore, you were able to accumulate a total of {${color}}${gold.amount}{} golden coins.`);
+			pause();
+		}
+
+		add$1("The game is over now, but you are free to look around.");
+	}
+}
+
+class Gold extends Item {
+	constructor() {
+		super("gold", {ch:"$", fg:"#fc0", name:"golden coin"});
+		this.amount = 1;
+	}
+
+	pick(who) {
+		super.pick(who);
+
+		let other = who.inventory.getItemByType(this._type);
+		if (other) {
+			other.amount++;
+		} else {
+			who.inventory.addItem(this);
+		}
+
+		publish("status-change");
+	}
+}
+
+
+
+class Axe extends Wearable {
+	constructor() {
+		super("weapon", {ch:")", fg:"#eef", name:"axe"});
+	}
+}
+
+class Shield extends Wearable {
+	constructor() {
+		super("shield", {ch:"]", fg:"#eef", name:"shield"});
+	}
+}
+
+class HealthPotion extends Drinkable {
+	constructor() {
+		super(POTION_HP, {ch:"!", fg:"#e00", name:"health potion"});
+	}
+
+	pick(who) {
+		super.pick(who);
+		if (who.maxhp == who.hp) {
+			add$1("Nothing happens.");
+		} else if (who.maxhp - who.hp <= this._strength) {
+			add$1("You are completely healed.");
+		} else {
+			add$1("Some of your health is restored.");
+		}
+		who.adjustStat("hp", this._strength);
+	}
+}
+
+class ManaPotion extends Drinkable {
+	constructor() {
+		super(POTION_MANA, {ch:"!", fg:"#00e", name:"mana potion"});
+	}
+
+	pick(who) {
+		super.pick(who);
+		if (who.maxmana == who.mana) {
+			add$1("Nothing happens.");
+		} else if (who.maxmana - who.mana <= this._strength) {
+			add$1("Your mana is completely refilled.");
+		} else {
+			add$1("Some of your mana is refilled.");
+		}
+		who.adjustStat("mana", this._strength);
+	}
+}
+
+function wander(who) {
+	let result = Promise.resolve();
+
+	if (ROT.RNG.getUniform() < AI_IDLE) { return result; }
+
+	let level = who.getLevel();
+	let xy = who.getXY();
+
+	let dirs = DIRS.filter(dxy => {
+		let entity = level.getEntity(xy.plus(dxy));
+		return entity.blocks < BLOCKS_MOVEMENT;
+	});
+	
+	if (!dirs.length) { return result; }
+	
+	let dir = dirs.random();
+	who.moveTo(xy.plus(dir));
+	return result;
+}
+
+function getCloserToPC(who) {
+	let best = 1/0;
+	let avail = [];
+
+	DIRS.forEach(dxy => {
+		let xy = who.getXY().plus(dxy);
+		let entity = who.getLevel().getEntity(xy);
+		if (entity.blocks >= BLOCKS_MOVEMENT) { return; }
+		
+		let dist = xy.dist8(pc.getXY());
+		if (dist < best) {
+			best = dist;
+			avail = [];
+		}
+		
+		if (dist == best) { avail.push(xy); }
+	});
+	
+	if (avail.length) {
+		who.moveTo(avail.random());
+	}
+
+	return Promise.resolve();
+}
+
+function actHostile(who) {
+	let dist = who.getXY().dist8(pc.getXY());
+	if (dist == 1) {
+		add$1("%A attacks you!", who);
+		return start(who);
+	}
+
+	if (!who.ai.mobile) { return Promise.resolve(); }
+
+	if (dist <= AI_RANGE) {
+		return getCloserToPC(who);
+	} else {
+		return wander(who);
+	}
+}
+
+function actNonHostile(who) {
+	if (!who.ai.mobile) { return Promise.resolve(); }
+	return wander(who);
+}
+
+function act(who) {
+	if (who.ai.hostile) {
+		return actHostile(who);
+	} else {
+		return actNonHostile(who);
+	}
+}
+
+const HERO_RACES = ["dwarven", "halfling", "orcish", "human", "elvish", "noble"];
+const HERO_TYPES = ["knight", "adventurer", "hero", "explorer"];
+const HERO_CHATS = [
+	"Hi there, fellow adventurer!",
+	"I wonder how many tower floors are there...",
+	"Some monsters in this tower give a pretty hard fight!",
+	"Look out for potions, they might save your butt.",
+	"A sharp sword is better than a blunt one." // FIXME dalsi
+];
+
+class Autonomous extends Being {
+	constructor(visual) {
+		super(visual);
+		this.ai = {
+			hostile: true,
+			mobile: true
+		};
+		this.inventory.addItem(new Gold());
+	}
+
+	act() {
+		return act(this);
+	}
+}
+
+class Rat extends Autonomous {
+	constructor() {
+		super({ch:"r", fg:"gray", name:"rat"});
+	}
+}
+
+class Hero extends Autonomous {
+	constructor() {
+		let race = HERO_RACES.random();
+		let type = HERO_TYPES.random();
+		let visual = {
+			ch: type.charAt(0),
+			fg: ROT.Color.toRGB([
+				ROT.RNG.getUniformInt(100, 255),
+				ROT.RNG.getUniformInt(100, 255),
+				ROT.RNG.getUniformInt(100, 255)
+			]),
+			name: `${race} ${type}`
+		};
+		super(visual);
+		this.ai.hostile = false;
+	}
+
+	getChat() {
+		if (this._level.danger == LAST_LEVEL) {
+			return "You can do whatever you want here, but beware - no kissing!";
+		} else {
+			return HERO_CHATS.random();
+		}
+	}
 }
 
 // FIXME POLYFILL array.prototype.includes
@@ -1706,6 +2040,15 @@ function cloneRoom(room) {
 		lt: room.lt.clone(),
 		rb: room.rb.clone(),
 		center: room.center.clone(),
+	}
+}
+
+function centerRoom(halfSize) {
+	return {
+		neighbors: [],
+		center: new XY(0, 0),
+		lt: halfSize.scale(-1),
+		rb: halfSize.scale(1)
 	}
 }
 
@@ -1756,139 +2099,6 @@ function furthestRoom(rooms, start) {
 	return bestRoom;
 }
 
-function wander(who) {
-	let result = Promise.resolve();
-
-	if (ROT.RNG.getUniform() > AI_IDLE) { return result; }
-
-	let level = who.getLevel();
-
-	let dirs = DIRS.filter(dxy => {
-		let entity = level.getEntity(who.getXY().plus(dxy));
-		return entity.blocks < BLOCKS_MOVEMENT;
-	});
-	
-	if (!dirs.length) { return result; }
-	
-	let dir = dirs.random();
-	let xy = who.getXY().plus(dir);
-	who.moveTo(xy);
-	return result;
-}
-
-function getCloserToPC(who) {
-	let best = 1/0;
-	let avail = [];
-
-	DIRS.forEach(dxy => {
-		let xy = who.getXY().plus(dxy);
-		let entity = who.getLevel().getEntity(xy);
-		if (entity.blocks >= BLOCKS_MOVEMENT) { return; }
-		
-		let dist = xy.dist8(pc.getXY());
-		if (dist < best) {
-			best = dist;
-			avail = [];
-		}
-		
-		if (dist == best) { avail.push(xy); }
-	});
-	
-	if (avail.length) {
-		who.moveTo(avail.random());
-	}
-
-	return Promise.resolve();
-}
-
-function attack(who) {
-	let dist = who.getXY().dist8(pc.getXY());
-	if (dist == 1) {
-		add$1("%A attacks you!", who);
-		return start(who);
-	} else if (dist <= AI_RANGE) {
-		return getCloserToPC(who);
-	} else {
-		return wander(who);
-	}
-}
-
-function actEnemy(who) {
-	return attack(who);
-}
-
-class Enemy extends Being {
-	constructor(visual) {
-		super(visual);
-	}
-
-	act() {
-		return actEnemy(this);
-	}
-}
-
-class Rat extends Enemy {
-	constructor() {
-		super({ch:"r", fg:"gray", name:"rat"});
-	}
-}
-
-class Sword extends Wearable {
-	constructor() {
-		super("weapon", {ch:"(", fg:"#eef", name:"sword"});
-	}
-}
-
-class Axe extends Wearable {
-	constructor() {
-		super("weapon", {ch:")", fg:"#eef", name:"axe"});
-	}
-}
-
-class Shield extends Wearable {
-	constructor() {
-		super("shield", {ch:"]", fg:"#eef", name:"shield"});
-	}
-}
-
-class HealthPotion extends Drinkable {
-	constructor() {
-		super("potion", {ch:"!", fg:"#e00", name:"health potion"});
-		this._strength = 10;
-	}
-
-	pick(who) {
-		super.pick(who);
-		if (who.maxhp == who.hp) {
-			add$1("Nothing happens.");
-		} else if (who.maxhp - who.hp <= this._strength) {
-			add$1("You are completely healed.");
-		} else {
-			add$1("Some of your health is restored.");
-		}
-		who.adjustStat("hp", 10);
-	}
-}
-
-class ManaPotion extends Drinkable {
-	constructor() {
-		super("potion", {ch:"!", fg:"#00e", name:"mana potion"});
-		this._strength = 10;
-	}
-
-	pick(who) {
-		super.pick(who);
-		if (who.maxmana == who.mana) {
-			add$1("Nothing happens.");
-		} else if (who.maxmana - who.mana <= this._strength) {
-			add$1("Your mana is completely refilled.");
-		} else {
-			add$1("Some of your mana is refilled.");
-		}
-		who.adjustStat("mana", 10);
-	}
-}
-
 const levels = {};
 
 function staircaseCallback(danger, start) {
@@ -1899,35 +2109,77 @@ function staircaseCallback(danger, start) {
 	}
 }
 
-function decorate(level) {
-	levels[level.danger] = level;
+function decorateLast(level) {
+	let radius = dangerToRadius(level.danger);
+	level.start = level.rooms[0].center.minus(new XY(radius-2, 0));
 
+	let bed = level.rooms[0].center.plus(new XY(3, 0));
+	level.setCell(bed, new Princess());
+
+	level.setCell(bed.plus(new XY(-1, -1)), new Pillar());
+	level.setCell(bed.plus(new XY(+1, -1)), new Pillar());
+	level.setCell(bed.plus(new XY(-1, +1)), new Pillar());
+	level.setCell(bed.plus(new XY(+1, +1)), new Pillar());
+
+	let xy = new XY();
+	for (xy.x = bed.x-3; xy.x <= bed.x+3; xy.x++) {
+		for (xy.y = bed.y-3; xy.y <= bed.y+3; xy.y++) {
+			if (xy.is(bed)) { continue; }
+			if (level.getEntity(xy) != ROOM) { continue; }
+
+			if (xy.dist8(bed) == 1) { // close heroes
+				let hero = new Hero();
+				hero.ai.mobile = false;
+				hero.moveTo(xy.clone(), level);
+				continue;
+			}
+
+			if (ROT.RNG.getUniform() > 0.5) { continue;  }
+			let hero = new Hero(); // remote heroes
+			hero.moveTo(xy.clone(), level);
+		}
+	}
+}
+
+function decorateRegular(level) {
 	let r1 = furthestRoom(level.rooms, level.rooms[0]);
 	let r2 = furthestRoom(level.rooms, r1);
 
 	level.start = r1.center;
-	level.end = r2.center;
+//	level.end = r2.center;
+	level.end = level.start.plus({x:1,y:0});
 
 	level.rooms.forEach(room => level.carveDoors(room));	
 
 	let rat = new Rat();
 	rat.moveTo(level.start.plus(new XY(3, 0)), level);
-	level.setItem(level.start.plus(new XY(1, 0)), new Sword());
+//	level.setItem(level.start.plus(new XY(1, 0)), new Sword());
 	level.setItem(level.start.plus(new XY(2, 0)), new Axe());
 	level.setItem(level.start.plus(new XY(3, 0)), new Shield());
 	level.setItem(level.start.plus(new XY(0, 1)), new HealthPotion());
 	level.setItem(level.start.plus(new XY(0, 2)), new ManaPotion());
 
-	/* staircase up, always */
+	/* staircase up, all non-last levels */
 	let up = new Staircase(true, staircaseCallback(level.danger+1, true));
 	level.setCell(level.end, up);
 
-	/* staircase down, only when available */
+	/* staircase down, when available */
 	let d = level.danger-1;
 	if (d in levels) {
 		let down = new Staircase(false, staircaseCallback(level.danger-1, false));
 		level.setCell(level.start, down);
 	}
+}
+
+function decorate(level) {
+	levels[level.danger] = level;
+
+	if (level.danger == LAST_LEVEL) {
+		decorateLast(level);
+	} else {
+		decorateRegular(level);
+	}
+
 }
 
 function connectHorizontal(level, room1, room2) {
@@ -2010,19 +2262,23 @@ function connectWithClosest(room, level) {
 
 function generate(danger) {
 	let level = new Level(danger);
-	
-	while (true) {
-		let ok = generateNextRoom(level);
-		if (!ok) { break; }
+
+	if (danger == LAST_LEVEL) {
+		let radius = dangerToRadius(danger);
+		let centerRoom$$1 = centerRoom(new XY(radius, radius));
+		level.carveRoom(centerRoom$$1);
+	} else {
+		while (true) {
+			let ok = generateNextRoom(level);
+			if (!ok) { break; }
+		}
+		let r1 = furthestRoom(level.rooms, level.rooms[0]);
+		let r2 = furthestRoom(level.rooms, r1);
+		connectWithClosest(r1, level);
+		connectWithClosest(r2, level);
 	}
-
-	let r1 = furthestRoom(level.rooms, level.rooms[0]);
-	let r2 = furthestRoom(level.rooms, r1);
-	connectWithClosest(r1, level);
-	connectWithClosest(r2, level);
-
+	
 	decorate(level);
-
 	level.trim();
 
 	return level;
@@ -2040,14 +2296,15 @@ function init$$1() {
 
 	update$1();
 
-	let level = generate(1);
-	level.activate(level.start, pc);
-
 	add$1("A truly beautiful day for a heroic action!");
 	add$1("This tower is surrounded by plains and trees and there might be a princess sleeping on the last floor.");
 	pause();
 	add$1("Apparently the only way to get to her is to advance through all tower levels.");
 	add$1("To move around, use {#fff}arrow keys{}, {#fff}numpad{} or {#fff}vim-keys{}.");
+	pause();
+
+	let level = generate(1);
+	level.activate(level.start, pc);
 
 	loop();
 }

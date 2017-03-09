@@ -9,6 +9,8 @@ import * as log from "ui/log.js";
 import pc from "being/pc.js";
 import { ATTACK_1, ATTACK_2, MAGIC_1, MAGIC_2 } from "./types.js";
 
+const AMOUNTS = ["slightly", "moderately", "severely", "critically"].reverse();
+
 let tutorial = false;
 
 let board = new Board().randomize();
@@ -25,8 +27,33 @@ function end() {
 }
 
 function doDamage(attacker, defender, options = {}) {
-	console.log("%s attacks %s (%o)", attacker, defender, options);
-	defender.adjustStat("hp", -5);
+	if (options.isMagic) { // check mana
+		if (attacker.mana < options.power) {
+			log.add("%The %{verb,do} not have enough mana to attack.", attacker, attacker);
+			return;
+		}
+		attacker.adjustStat("mana", -options.power);
+	}
+
+	let attack = attacker.getAttack();
+	let defense = defender.getDefense();
+	let damage = attack + options.power - defense;
+
+	if (damage <= 0) {
+		log.add("%The %{verb,fail} to damage %the.", attacker, attacker, defender);
+		return;
+	}
+
+	let newHP = Math.max(0, defender.hp-damage);
+	if (newHP > 0) {
+		let frac = newHP/defender.maxhp; // >0, < maxhp
+		let amount = AMOUNTS[Math.floor(frac * AMOUNTS.length)];
+		log.add(`%The %{verb,hit} %the and ${amount} %{verb,damage} %it.`, attacker, attacker, defender, attacker, defender);
+	} else {
+		log.add(`%The %{verb,hit} %the and %{verb,kill} %it!`, attacker, attacker, defender, attacker, defender);
+	}
+
+	defender.adjustStat("hp", -damage);
 	if (defender.hp <= 0) { end(); }
 }
 
@@ -46,7 +73,7 @@ function activate(xy) {
 		drawFull();
 	});
 
-	let power = segment.length * (segment.length+1) / 2;
+	let power = segment.length;
 	let isMagic = (value == MAGIC_1 || value == MAGIC_2);
 	let attacker = pc;
 	let defender = enemy;
@@ -55,7 +82,7 @@ function activate(xy) {
 		defender = pc;
 	}
 
-	doDamage(attacker, defender, {isMagic});
+	doDamage(attacker, defender, {power, isMagic});
 }
 
 function checkSegments() {
@@ -103,6 +130,7 @@ export function start(e) {
 		log.add("Combat in Sleeping Beauty happens by playing the {goldenrod}Game of Thorns{} on a square game board.");
 		log.add("Match sequences ({#fff}direction keys{} and {#fff}Enter{}) of colored blocks to perform individual actions. This includes both your attacks as well as your enemy's.");
 		log.add("Note that certain items in your inventory can modify the frequency of colors on the game board.");
+		log.pause();
 	}
 
 	enemy = e;

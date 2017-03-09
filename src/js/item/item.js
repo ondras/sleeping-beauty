@@ -17,6 +17,18 @@ export default class Item extends Entity {
 }
 
 export class Drinkable extends Item {
+	constructor(strength, visual) {
+		super("potion", visual);
+		this._strength = strength;
+
+		if (ROT.RNG.getUniform() > 0.5) {
+			let diff = Math.round(strength/5);
+			if (ROT.RNG.getUniform() > 0.5) { diff *= -1; }
+			this._strength += diff;
+			this._visual.name = `${diff > 0 ? "strong" : "weak"} ${this._visual.name}`;
+		}
+	}
+
 	pick(who) {
 		who.getLevel().setItem(who.getXY(), null);
 		log.add("You drink %the.", this);

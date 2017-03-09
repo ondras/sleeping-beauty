@@ -11,6 +11,7 @@ export default class Entity {
 	getVisual() { return this._visual; }
 
 	toString() { return this._visual.name; }
+
 	describeThe() { return `the ${this}`; }
 	describeA() {
 		let first = this._visual.name.charAt(0);
@@ -21,8 +22,3 @@ export default class Entity {
 
 String.format.map.the = "describeThe";
 String.format.map.a = "describeA";
-
-// being-specific
-String.format.map.he = "describeHe";
-String.format.map.his = "describeHis";
-String.format.map.him = "describeHim";

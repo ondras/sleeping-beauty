@@ -1,7 +1,8 @@
 import XY from "util/xy.js";
-import Level from "./level.js";
+import Level, {dangerToRadius} from "./level.js";
 import decorate from "./decorator.js";
 import * as room from "./room.js";
+import * as rules from "rules.js";
 
 function connectHorizontal(level, room1, room2) {
 	let min = Math.max(room1.lt.x, room2.lt.x);
@@ -83,19 +84,23 @@ function connectWithClosest(room, level) {
 
 export function generate(danger) {
 	let level = new Level(danger);
-	
-	while (true) {
-		let ok = generateNextRoom(level);
-		if (!ok) { break; }
+
+	if (danger == rules.LAST_LEVEL) {
+		let radius = dangerToRadius(danger);
+		let centerRoom = room.centerRoom(new XY(radius, radius));
+		level.carveRoom(centerRoom);
+	} else {
+		while (true) {
+			let ok = generateNextRoom(level);
+			if (!ok) { break; }
+		}
+		let r1 = room.furthestRoom(level.rooms, level.rooms[0]);
+		let r2 = room.furthestRoom(level.rooms, r1);
+		connectWithClosest(r1, level);
+		connectWithClosest(r2, level);
 	}
-
-	let r1 = room.furthestRoom(level.rooms, level.rooms[0]);
-	let r2 = room.furthestRoom(level.rooms, r1);
-	connectWithClosest(r1, level);
-	connectWithClosest(r2, level);
-
+	
 	decorate(level);
-
 	level.trim();
 
 	return level;

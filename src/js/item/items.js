@@ -1,6 +1,7 @@
 import Item, {Wearable, Drinkable} from "./item.js";
 import * as pubsub from "util/pubsub.js";
 import * as log from "ui/log.js";
+import * as rules from "rules.js";
 
 export class Gold extends Item {
 	constructor() {
@@ -42,8 +43,7 @@ export class Shield extends Wearable {
 
 export class HealthPotion extends Drinkable {
 	constructor() {
-		super("potion", {ch:"!", fg:"#e00", name:"health potion"});
-		this._strength = 10;
+		super(rules.POTION_HP, {ch:"!", fg:"#e00", name:"health potion"});
 	}
 
 	pick(who) {
@@ -55,14 +55,13 @@ export class HealthPotion extends Drinkable {
 		} else {
 			log.add("Some of your health is restored.");
 		}
-		who.adjustStat("hp", 10);
+		who.adjustStat("hp", this._strength);
 	}
 }
 
 export class ManaPotion extends Drinkable {
 	constructor() {
-		super("potion", {ch:"!", fg:"#00e", name:"mana potion"});
-		this._strength = 10;
+		super(rules.POTION_MANA, {ch:"!", fg:"#00e", name:"mana potion"});
 	}
 
 	pick(who) {
@@ -74,6 +73,6 @@ export class ManaPotion extends Drinkable {
 		} else {
 			log.add("Some of your mana is refilled.");
 		}
-		who.adjustStat("mana", 10);
+		who.adjustStat("mana", this._strength);
 	}
 }

@@ -1,6 +1,20 @@
-import Entity, { BLOCKS_NONE, BLOCKS_LIGHT } from "entity.js";
+import Entity, { BLOCKS_NONE, BLOCKS_MOVEMENT, BLOCKS_LIGHT } from "entity.js";
 import * as log from "ui/log.js";
 import * as pubsub from "util/pubsub.js";
+
+export class Princess extends Entity {
+	constructor() {
+		super({ch:"P", fg:"#ff0", name:"princess"});
+		this.blocks = BLOCKS_MOVEMENT;
+	}
+}
+
+export class Pillar extends Entity {
+	constructor() {
+		super({ch:"T", fg:"#fff", name:"pillar"});
+		this.blocks = BLOCKS_MOVEMENT;
+	}
+}
 
 export class Floor extends Entity {
 	constructor() {
