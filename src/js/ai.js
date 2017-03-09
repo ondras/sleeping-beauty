@@ -54,7 +54,7 @@ function getCloserToPC(who) {
 function actHostile(who) {
 	let dist = who.getXY().dist8(pc.getXY());
 	if (dist == 1) {
-		log.add("{#f00}%A attacks you!{}", who);
+		log.add("{#f00}You are attacked by %a!{}", who);
 		return combat.start(who);
 	}
 

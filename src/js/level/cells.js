@@ -94,7 +94,7 @@ export class Staircase extends Entity {
 
 	activate(who) {
 		log.add("You enter the staircase...");
-		this._callback(who);
+		return this._callback(who);
 	}
 }
 

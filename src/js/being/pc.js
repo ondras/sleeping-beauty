@@ -32,6 +32,7 @@ class PC extends Being {
 	constructor() {
 		super({ch:"@", fg:"#fff", name:"you"});
 		this._resolve = null; // end turn
+		this._maxDanger = 1;
 		this.fov = {};
 
 		pubsub.subscribe("topology-change", this);
@@ -53,6 +54,9 @@ class PC extends Being {
 	act() {
 		log.pause();
 		let promise = new Promise(resolve => this._resolve = resolve);
+
+		if (ROT.RNG.getUniform() < rules.REGEN_HP) { this.adjustStat("hp", 1); }
+		if (ROT.RNG.getUniform() < rules.REGEN_MANA) { this.adjustStat("mana", 1); }
 
 		promise = promise.then(() => keyboard.pop());
 		keyboard.push(this);
@@ -101,6 +105,13 @@ class PC extends Being {
 
 		this._updateFOV();
 
+		if (level && level.danger > this._maxDanger) {
+			this._maxDanger = level.danger;
+			log.add("You feel healthier.");
+			this.maxhp += rules.LEVEL_HP;
+			this.adjustStat("hp", rules.LEVEL_HP);
+		}
+
 		// getEntity not possible, because *we* are standing here :)
 
 		let cell = this._level.getCell(this._xy);
@@ -140,8 +151,7 @@ class PC extends Being {
 
 		let cell = this._level.getCell(xy);
 		if (cell.activate) {
-			cell.activate(this);
-			this._resolve(); // successful cell activation
+			cell.activate(this).then(() => this._resolve());
 		} else {
 			log.add("There is nothing you can do here.");
 		}
@@ -189,7 +199,7 @@ class PC extends Being {
 		let options = [];
 
 		callbacks.push(() => this._kiss(being));
-		options.push("Kiss %it gently".format(being))
+		options.push("Kiss %it gently to wake %it up".format(being, being))
 
 		callbacks.push(() => this._chat(being));
 		options.push("Talk to %it".format(being))

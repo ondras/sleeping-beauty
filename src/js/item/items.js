@@ -97,7 +97,7 @@ export class HealthPotion extends Drinkable {
 
 export class Lutefisk extends Drinkable {
 	constructor() {
-		super(0, {ch:"%", fg:"#ff0", name:"lutefisk"});
+		super(0, {ch:"?", fg:"#ff0", name:"lutefisk"});
 		this._visual.name = "lutefisk"; // no modifiers, sry
 	}
 

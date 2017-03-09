@@ -7,6 +7,7 @@ import * as cells from "./cells.js";
 import * as pubsub from "util/pubsub.js";
 import * as map from "ui/map/map.js";
 import * as log from "ui/log.js";
+import * as keyboard from "util/keyboard.js";
 
 const D1_RADIUS = 15;
 const D2_RADIUS = 30;
@@ -34,12 +35,7 @@ export default class Level {
 		this._cells = {};
 	}
 
-	activate(xy, who) {
-		if (this.danger == rules.LAST_LEVEL) { 
-			this._outro(who);
-		} else {
-			log.add(`Welcome to tower floor ${this.danger}.`);
-		}
+	activate(xy, who) { // async, because outro
 		actors.clear();
 
 		who.moveTo(null); // remove from old
@@ -50,6 +46,13 @@ export default class Level {
 		beings.forEach(being => actors.add(being));
 
 		pubsub.publish("status-change");
+
+		if (this.danger == rules.LAST_LEVEL) { 
+			return this._outro(who);
+		} else {
+			log.add(`Welcome to tower floor ${this.danger}.`);
+			return Promise.resolve();
+		}
 	}
 
 	isInside(xy) {
@@ -150,9 +153,9 @@ export default class Level {
 	}
 
 	_outro(who) {
-		log.add("Welcome to the last floor!");
+		log.add("{#33f}Welcome to the last floor!{}");
 		log.add("You finally managed to reach the princess and finish the game.");
-		log.add("Congratulations!");
+		log.add("{goldenrod}Congratulations{}!");
 		log.pause();
 
 		let gold = who.inventory.getItemByType("gold");
@@ -163,5 +166,18 @@ export default class Level {
 		}
 
 		log.add("The game is over now, but you are free to look around.");
+		log.add("{#fff}Press Escape to continue...{}");
+
+		map.deactivate();
+		let resolve;
+		let promise = new Promise(r => resolve = r);
+		let handleKeyEvent = (e) => {
+			if (!keyboard.isEscape(e)) { return; }
+			map.activate();
+			keyboard.pop();
+			resolve();
+		} 
+		keyboard.push({handleKeyEvent});
+		return promise;
 	}
 }

@@ -248,7 +248,6 @@ function add$1() {
 	let item = document.createElement("span");
 	item.innerHTML = `${str} `;
 	current.appendChild(item);
-	node.scrollTop = node.scrollHeight;
 }
 
 function pause() {
@@ -263,8 +262,11 @@ function init$2(n) {
 	node = n;
 	node.classList.remove("hidden");
 
-	window.addEventListener("resize", e => node.scrollTop = node.scrollHeight);
 	pause();
+
+	setInterval(() => {
+		node.scrollTop += 2;
+	}, 20);
 }
 
 class Brambles extends Entity {
@@ -359,7 +361,7 @@ class Staircase extends Entity {
 
 	activate(who) {
 		add$1("You enter the staircase...");
-		this._callback(who);
+		return this._callback(who);
 	}
 }
 
@@ -467,6 +469,10 @@ const COMBAT_MODIFIER = 0.4;
 const HOSTILE_CHANCE = 0.7;
 
 const BRAMBLE_CHANCE = 0.5;
+const LEVEL_HP = 4;
+
+const REGEN_HP = 0.05;
+const REGEN_MANA = 0.1;
 
 const ATTACK_1 = "a1";
 const ATTACK_2 = "a2";
@@ -654,7 +660,7 @@ class HealthPotion extends Drinkable {
 
 class Lutefisk extends Drinkable {
 	constructor() {
-		super(0, {ch:"%", fg:"#ff0", name:"lutefisk"});
+		super(0, {ch:"?", fg:"#ff0", name:"lutefisk"});
 		this._visual.name = "lutefisk"; // no modifiers, sry
 	}
 
@@ -781,7 +787,7 @@ function getCloserToPC(who) {
 function actHostile(who) {
 	let dist = who.getXY().dist8(pc.getXY());
 	if (dist == 1) {
-		add$1("{#f00}%A attacks you!{}", who);
+		add$1("{#f00}You are attacked by %a!{}", who);
 		return start(who);
 	}
 
@@ -1112,6 +1118,7 @@ class PC extends Being {
 	constructor() {
 		super({ch:"@", fg:"#fff", name:"you"});
 		this._resolve = null; // end turn
+		this._maxDanger = 1;
 		this.fov = {};
 
 		subscribe("topology-change", this);
@@ -1133,6 +1140,9 @@ class PC extends Being {
 	act() {
 		pause();
 		let promise = new Promise(resolve => this._resolve = resolve);
+
+		if (ROT.RNG.getUniform() < REGEN_HP) { this.adjustStat("hp", 1); }
+		if (ROT.RNG.getUniform() < REGEN_MANA) { this.adjustStat("mana", 1); }
 
 		promise = promise.then(() => pop());
 		push(this);
@@ -1181,11 +1191,18 @@ class PC extends Being {
 
 		this._updateFOV();
 
+		if (level && level.danger > this._maxDanger) {
+			this._maxDanger = level.danger;
+			add$1("You feel healthier.");
+			this.maxhp += LEVEL_HP;
+			this.adjustStat("hp", LEVEL_HP);
+		}
+
 		// getEntity not possible, because *we* are standing here :)
 
 		let cell = this._level.getCell(this._xy);
 		if (cell == BRAMBLES && ROT.RNG.getUniform() < BRAMBLE_CHANCE) {
-			add$1("You make your way through %s. Ouch! You are hurt by a thorn.", cell);
+			add$1("You make your way through %s. Ouch! You injure yourself on a thorn.", cell);
 			this.adjustStat("hp", -1);
 		}
 
@@ -1220,8 +1237,7 @@ class PC extends Being {
 
 		let cell = this._level.getCell(xy);
 		if (cell.activate) {
-			cell.activate(this);
-			this._resolve(); // successful cell activation
+			cell.activate(this).then(() => this._resolve());
 		} else {
 			add$1("There is nothing you can do here.");
 		}
@@ -1269,7 +1285,7 @@ class PC extends Being {
 		let options = [];
 
 		callbacks.push(() => this._kiss(being));
-		options.push("Kiss %it gently".format(being));
+		options.push("Kiss %it gently to wake %it up".format(being, being));
 
 		callbacks.push(() => this._chat(being));
 		options.push("Talk to %it".format(being));
@@ -2242,12 +2258,7 @@ class Level {
 		this._cells = {};
 	}
 
-	activate(xy, who) {
-		if (this.danger == LAST_LEVEL) { 
-			this._outro(who);
-		} else {
-			add$1(`Welcome to tower floor ${this.danger}.`);
-		}
+	activate(xy, who) { // async, because outro
 		clear();
 
 		who.moveTo(null); // remove from old
@@ -2258,6 +2269,13 @@ class Level {
 		beings.forEach(being => add(being));
 
 		publish("status-change");
+
+		if (this.danger == LAST_LEVEL) { 
+			return this._outro(who);
+		} else {
+			add$1(`Welcome to tower floor ${this.danger}.`);
+			return Promise.resolve();
+		}
 	}
 
 	isInside(xy) {
@@ -2358,9 +2376,9 @@ class Level {
 	}
 
 	_outro(who) {
-		add$1("Welcome to the last floor!");
+		add$1("{#33f}Welcome to the last floor!{}");
 		add$1("You finally managed to reach the princess and finish the game.");
-		add$1("Congratulations!");
+		add$1("{goldenrod}Congratulations{}!");
 		pause();
 
 		let gold = who.inventory.getItemByType("gold");
@@ -2371,6 +2389,19 @@ class Level {
 		}
 
 		add$1("The game is over now, but you are free to look around.");
+		add$1("{#fff}Press Escape to continue...{}");
+
+		deactivate$1();
+		let resolve;
+		let promise = new Promise(r => resolve = r);
+		let handleKeyEvent = (e) => {
+			if (!isEscape(e)) { return; }
+			activate$2();
+			pop();
+			resolve();
+		}; 
+		push({handleKeyEvent});
+		return promise;
 	}
 }
 
@@ -2415,8 +2446,6 @@ function getPotion() {
 	let ctor = avail.random();
 	return new ctor();
 }
-
-// FIXME POLYFILL array.prototype.includes
 
 const DIST = 10;
 
@@ -2516,7 +2545,7 @@ function staircaseCallback(danger, start) {
 	return function(who) {
 		if (!(danger in levels)) { generate(danger); } /* create another level */
 		let level = levels[danger];
-		level.activate(start ? level.start : level.end, who);
+		return level.activate(start ? level.start : level.end, who);
 	}
 }
 

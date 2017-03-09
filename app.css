@@ -24,7 +24,7 @@ ul {
   opacity: 0;
 }
 .inactive {
-  opacity: 0.6;
+  opacity: 0.5;
 }
 #intro {
   font-size: 18px;

@@ -1,5 +1,3 @@
-// FIXME POLYFILL array.prototype.includes
-
 import XY from "util/xy.js";
 
 const DIST = 10;

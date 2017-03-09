@@ -34,7 +34,7 @@ function staircaseCallback(danger, start) {
 	return function(who) {
 		if (!(danger in levels)) { generate(danger); } /* create another level */
 		let level = levels[danger];
-		level.activate(start ? level.start : level.end, who);
+		return level.activate(start ? level.start : level.end, who);
 	}
 }
 

@@ -11,7 +11,6 @@ export function add() {
 	let item = document.createElement("span");
 	item.innerHTML = `${str} `;
 	current.appendChild(item);
-	node.scrollTop = node.scrollHeight;
 }
 
 export function pause() {
@@ -26,6 +25,9 @@ export function init(n) {
 	node = n;
 	node.classList.remove("hidden");
 
-	window.addEventListener("resize", e => node.scrollTop = node.scrollHeight);
 	pause();
+
+	setInterval(() => {
+		node.scrollTop += 2;
+	}, 20);
 }

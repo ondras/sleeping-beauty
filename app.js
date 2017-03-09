@@ -816,7 +816,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		var item = document.createElement("span");
 		item.innerHTML = str + " ";
 		current.appendChild(item);
-		node.scrollTop = node.scrollHeight;
 	}
 
 	function pause() {
@@ -835,10 +834,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		node = n;
 		node.classList.remove("hidden");
 
-		window.addEventListener("resize", function (e) {
-			return node.scrollTop = node.scrollHeight;
-		});
 		pause();
+
+		setInterval(function () {
+			node.scrollTop += 2;
+		}, 20);
 	}
 
 	var Brambles = function (_Entity) {
@@ -999,7 +999,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 		Staircase.prototype.activate = function activate(who) {
 			add$1("You enter the staircase...");
-			this._callback(who);
+			return this._callback(who);
 		};
 
 		return Staircase;
@@ -1124,6 +1124,10 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 	var HOSTILE_CHANCE = 0.7;
 
 	var BRAMBLE_CHANCE = 0.5;
+	var LEVEL_HP = 4;
+
+	var REGEN_HP = 0.05;
+	var REGEN_MANA = 0.1;
 
 	var ATTACK_1 = "a1";
 	var ATTACK_2 = "a2";
@@ -1395,7 +1399,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Lutefisk() {
 			_classCallCheck(this, Lutefisk);
 
-			var _this25 = _possibleConstructorReturn(this, _Drinkable2.call(this, 0, { ch: "%", fg: "#ff0", name: "lutefisk" }));
+			var _this25 = _possibleConstructorReturn(this, _Drinkable2.call(this, 0, { ch: "?", fg: "#ff0", name: "lutefisk" }));
 
 			_this25._visual.name = "lutefisk"; // no modifiers, sry
 			return _this25;
@@ -1538,7 +1542,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 	function actHostile(who) {
 		var dist = who.getXY().dist8(pc.getXY());
 		if (dist == 1) {
-			add$1("{#f00}%A attacks you!{}", who);
+			add$1("{#f00}You are attacked by %a!{}", who);
 			return start(who);
 		}
 
@@ -2018,6 +2022,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			var _this42 = _possibleConstructorReturn(this, _Being2.call(this, { ch: "@", fg: "#fff", name: "you" }));
 
 			_this42._resolve = null; // end turn
+			_this42._maxDanger = 1;
 			_this42.fov = {};
 
 			subscribe("topology-change", _this42);
@@ -2057,6 +2062,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			var promise = new Promise(function (resolve) {
 				return _this43._resolve = resolve;
 			});
+
+			if (ROT.RNG.getUniform() < REGEN_HP) {
+				this.adjustStat("hp", 1);
+			}
+			if (ROT.RNG.getUniform() < REGEN_MANA) {
+				this.adjustStat("mana", 1);
+			}
 
 			promise = promise.then(function () {
 				return pop();
@@ -2113,11 +2125,18 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			this._updateFOV();
 
+			if (level && level.danger > this._maxDanger) {
+				this._maxDanger = level.danger;
+				add$1("You feel healthier.");
+				this.maxhp += LEVEL_HP;
+				this.adjustStat("hp", LEVEL_HP);
+			}
+
 			// getEntity not possible, because *we* are standing here :)
 
 			var cell = this._level.getCell(this._xy);
 			if (cell == BRAMBLES && ROT.RNG.getUniform() < BRAMBLE_CHANCE) {
-				add$1("You make your way through %s. Ouch! You are hurt by a thorn.", cell);
+				add$1("You make your way through %s. Ouch! You injure yourself on a thorn.", cell);
 				this.adjustStat("hp", -1);
 			}
 
@@ -2143,6 +2162,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		};
 
 		PC.prototype._activate = function _activate(xy) {
+			var _this44 = this;
+
 			// pick or enter
 			var item = this._level.getItem(xy);
 			if (item) {
@@ -2153,8 +2174,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			var cell = this._level.getCell(xy);
 			if (cell.activate) {
-				cell.activate(this);
-				this._resolve(); // successful cell activation
+				cell.activate(this).then(function () {
+					return _this44._resolve();
+				});
 			} else {
 				add$1("There is nothing you can do here.");
 			}
@@ -2190,11 +2212,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		};
 
 		PC.prototype._attack = function _attack(being) {
-			var _this44 = this;
+			var _this45 = this;
 
 			add$1("You attack %the.", being);
 			start(being).then(function () {
-				return _this44._resolve();
+				return _this45._resolve();
 			});
 		};
 
@@ -2204,24 +2226,24 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		};
 
 		PC.prototype._interactWithBeing = function _interactWithBeing(being) {
-			var _this45 = this;
+			var _this46 = this;
 
 			var callbacks = [];
 			var options = [];
 
 			callbacks.push(function () {
-				return _this45._kiss(being);
+				return _this46._kiss(being);
 			});
-			options.push("Kiss %it gently".format(being));
+			options.push("Kiss %it gently to wake %it up".format(being, being));
 
 			callbacks.push(function () {
-				return _this45._chat(being);
+				return _this46._chat(being);
 			});
 			options.push("Talk to %it".format(being));
 
 			if (being instanceof Hero) {} else {
 				callbacks.push(function () {
-					return _this45._attack(being);
+					return _this46._attack(being);
 				});
 				options.push("Attack %it".format(being));
 			}
@@ -2323,12 +2345,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		};
 
 		Board.prototype.fall = function fall() {
-			var _this46 = this;
+			var _this47 = this;
 
 			var animation = new Animation();
 
 			this._data.forEach(function (col, index) {
-				_this46._fallColumn(index, animation);
+				_this47._fallColumn(index, animation);
 			});
 
 			return animation;
@@ -2406,7 +2428,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 
 		Board.prototype.extractSegment = function extractSegment(xy) {
-			var _this47 = this;
+			var _this48 = this;
 
 			var segment = [];
 			var value = this.at(xy).value;
@@ -2415,12 +2437,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				if (xy.x < 0 || xy.y < 0 || xy.x >= W || xy.y >= H) {
 					return;
 				}
-				var cell = _this47.at(xy);
+				var cell = _this48.at(xy);
 				if (!cell || cell.value != value) {
 					return;
 				}
 
-				_this47.set(xy, null);
+				_this48.set(xy, null);
 				segment.push(xy.clone());
 				tryIt(xy.plus(new XY(1, 0)));
 				tryIt(xy.plus(new XY(-1, 0)));
@@ -3209,13 +3231,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		}
 
 		Level.prototype.activate = function activate(xy, who) {
-			var _this48 = this;
+			var _this49 = this;
 
-			if (this.danger == LAST_LEVEL) {
-				this._outro(who);
-			} else {
-				add$1("Welcome to tower floor " + this.danger + ".");
-			}
+			// async, because outro
 			clear();
 
 			who.moveTo(null); // remove from old
@@ -3223,7 +3241,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			who.moveTo(xy, this); // put to new
 
 			var beings = Object.keys(this._beings).map(function (key) {
-				return _this48._beings[key];
+				return _this49._beings[key];
 			}).filter(function (b) {
 				return b;
 			}); /* filter because of empty values */
@@ -3232,6 +3250,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			});
 
 			publish("status-change");
+
+			if (this.danger == LAST_LEVEL) {
+				return this._outro(who);
+			} else {
+				add$1("Welcome to tower floor " + this.danger + ".");
+				return Promise.resolve();
+			}
 		};
 
 		Level.prototype.isInside = function isInside(xy) {
@@ -3245,12 +3270,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		};
 
 		Level.prototype.trim = function trim() {
-			var _this49 = this;
+			var _this50 = this;
 
 			Object.keys(this._cells).forEach(function (key) {
 				var xy = XY.fromString(key);
-				if (!_this49.isInside(xy)) {
-					delete _this49._cells[key];
+				if (!_this50.isInside(xy)) {
+					delete _this50._cells[key];
 				}
 			});
 		};
@@ -3349,9 +3374,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		};
 
 		Level.prototype._outro = function _outro(who) {
-			add$1("Welcome to the last floor!");
+			add$1("{#33f}Welcome to the last floor!{}");
 			add$1("You finally managed to reach the princess and finish the game.");
-			add$1("Congratulations!");
+			add$1("{goldenrod}Congratulations{}!");
 			pause();
 
 			var gold = who.inventory.getItemByType("gold");
@@ -3362,6 +3387,23 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			}
 
 			add$1("The game is over now, but you are free to look around.");
+			add$1("{#fff}Press Escape to continue...{}");
+
+			deactivate$1();
+			var resolve = void 0;
+			var promise = new Promise(function (r) {
+				return resolve = r;
+			});
+			var handleKeyEvent = function handleKeyEvent(e) {
+				if (!isEscape(e)) {
+					return;
+				}
+				activate$2();
+				pop();
+				resolve();
+			};
+			push({ handleKeyEvent: handleKeyEvent });
+			return promise;
 		};
 
 		return Level;
@@ -3413,8 +3455,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		var ctor = avail.random();
 		return new ctor();
 	}
-
-	// FIXME POLYFILL array.prototype.includes
 
 	var DIST = 10;
 
@@ -3522,7 +3562,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				generate(danger);
 			} /* create another level */
 			var level = levels[danger];
-			level.activate(start ? level.start : level.end, who);
+			return level.activate(start ? level.start : level.end, who);
 		};
 	}
 
