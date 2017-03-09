@@ -1,5 +1,5 @@
 import Being from "./being.js";
-import { Gold } from "item/items.js";
+import * as items from "item/items.js";
 import * as ai from "ai.js";
 import * as log from "ui/log.js";
 import * as rules from "rules.js";
@@ -21,7 +21,7 @@ class Autonomous extends Being {
 			hostile: true,
 			mobile: true
 		}
-		this.inventory.addItem(new Gold());
+		this.inventory.addItem(new items.Gold());
 	}
 
 	act() {
@@ -36,13 +36,108 @@ class Autonomous extends Being {
 export class Rat extends Autonomous {
 	constructor() {
 		super({ch:"r", fg:"#aaa", name:"rat"});
-		this.attack = 1;
-		this.defense = 0;
 		this.mana = this.maxmana = 0;
 		this.hp = this.maxhp = 1;
 	}
 }
 Rat.danger = 1;
+
+export class Bat extends Autonomous {
+	constructor() {
+		super({ch:"b", fg:"#a83", name:"bat"});
+		this.mana = this.maxmana = 0;
+		this.hp = this.maxhp = 10;
+	}
+}
+Bat.danger = 1;
+
+export class Goblin extends Autonomous {
+	constructor() {
+		super({ch:"g", fg:"#33a", name:"goblin"});
+		this.mana = this.maxmana = 10;
+	}
+}
+Goblin.danger = 2;
+
+export class Orc extends Autonomous {
+	constructor() {
+		super({ch:"o", fg:"#3a3", name:"orc"});
+		this.mana = this.maxmana = 20;
+		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new items.Dagger()); }
+	}
+}
+Orc.danger = 3;
+
+export class OrcWitch extends Autonomous {
+	constructor() {
+		super({ch:"O", fg:"#33a", name:"orcish witch"});
+		this.sex = 1;
+		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new items.Helmet()); }
+	}
+}
+OrcWitch.danger = 4;
+
+export class Skeleton extends Autonomous {
+	constructor() {
+		super({ch:"s", fg:"#eee", name:"skeleton"});
+		this.hp = this.maxhp = 25;
+		if (ROT.RNG.getUniform() > 0.5) { 
+			this.inventory.addItem(new items.Dagger());
+		} else {
+			this.inventory.addItem(new items.Sword());
+		}
+	}
+}
+Skeleton.danger = 5;
+
+export class Ogre extends Autonomous {
+	constructor() {
+		super({ch:"O", fg:"#3a3", name:"ogre"});
+		this.hp = this.maxhp = 30;
+		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new items.Mace()); }
+		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new items.Shield()); }
+	}
+}
+Ogre.danger = 6;
+
+export class Zombie extends Autonomous {
+	constructor() {
+		super({ch:"z", fg:"#d3d", name:"zombie"});
+	}
+}
+Zombie.danger = 6;
+
+export class Spider extends Autonomous {
+	constructor() {
+		super({ch:"s", fg:"#c66", name:"spider"});
+		this.hp = this.maxhp = 10;
+		this.mana = this.maxmana = 0;
+		this.attack = 15;
+	}
+}
+Spider.danger = 3;
+
+export class Snake extends Autonomous {
+	constructor() {
+		super({ch:"s", fg:"#6c6", name:"poisonous snake"});
+		this.hp = this.maxhp = 10;
+		this.mana = this.maxmana = 0;
+		this.attack = 15;
+	}
+}
+Snake.danger = 4;
+
+export class Minotaur extends Autonomous {
+	constructor() {
+		super({ch:"M", fg:"#ca7", name:"minotaur warrior"});
+		this.hp = this.maxhp = 30;
+		this.mana = this.maxmana = 30;
+		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new items.Mace()); }
+		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new items.Shield()); }
+		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new items.Armor()); }
+	}
+}
+Minotaur.danger = 8;
 
 export class Hero extends Autonomous {
 	constructor() {

@@ -449,7 +449,7 @@ String.format.map.it = "describeIt";
 const AI_RANGE = 7;
 const AI_IDLE = 0.4;
 const PC_SIGHT = 8;
-const LAST_LEVEL = 3;
+const LAST_LEVEL = 8;
 
 const POTION_HP = 10;
 const POTION_MANA = 10;
@@ -754,7 +754,7 @@ function getCloserToPC(who) {
 function actHostile(who) {
 	let dist = who.getXY().dist8(pc.getXY());
 	if (dist == 1) {
-		add$1("%A attacks you!", who);
+		add$1("{#f00}%A attacks you!{}", who);
 		return start(who);
 	}
 
@@ -812,13 +812,108 @@ class Autonomous extends Being {
 class Rat extends Autonomous {
 	constructor() {
 		super({ch:"r", fg:"#aaa", name:"rat"});
-		this.attack = 1;
-		this.defense = 0;
 		this.mana = this.maxmana = 0;
 		this.hp = this.maxhp = 1;
 	}
 }
 Rat.danger = 1;
+
+class Bat extends Autonomous {
+	constructor() {
+		super({ch:"b", fg:"#a83", name:"bat"});
+		this.mana = this.maxmana = 0;
+		this.hp = this.maxhp = 10;
+	}
+}
+Bat.danger = 1;
+
+class Goblin extends Autonomous {
+	constructor() {
+		super({ch:"g", fg:"#33a", name:"goblin"});
+		this.mana = this.maxmana = 10;
+	}
+}
+Goblin.danger = 2;
+
+class Orc extends Autonomous {
+	constructor() {
+		super({ch:"o", fg:"#3a3", name:"orc"});
+		this.mana = this.maxmana = 20;
+		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new Dagger()); }
+	}
+}
+Orc.danger = 3;
+
+class OrcWitch extends Autonomous {
+	constructor() {
+		super({ch:"O", fg:"#33a", name:"orcish witch"});
+		this.sex = 1;
+		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new Helmet()); }
+	}
+}
+OrcWitch.danger = 4;
+
+class Skeleton extends Autonomous {
+	constructor() {
+		super({ch:"s", fg:"#eee", name:"skeleton"});
+		this.hp = this.maxhp = 25;
+		if (ROT.RNG.getUniform() > 0.5) { 
+			this.inventory.addItem(new Dagger());
+		} else {
+			this.inventory.addItem(new Sword());
+		}
+	}
+}
+Skeleton.danger = 5;
+
+class Ogre extends Autonomous {
+	constructor() {
+		super({ch:"O", fg:"#3a3", name:"ogre"});
+		this.hp = this.maxhp = 30;
+		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new Mace()); }
+		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new Shield()); }
+	}
+}
+Ogre.danger = 6;
+
+class Zombie extends Autonomous {
+	constructor() {
+		super({ch:"z", fg:"#d3d", name:"zombie"});
+	}
+}
+Zombie.danger = 6;
+
+class Spider extends Autonomous {
+	constructor() {
+		super({ch:"s", fg:"#c66", name:"spider"});
+		this.hp = this.maxhp = 10;
+		this.mana = this.maxmana = 0;
+		this.attack = 15;
+	}
+}
+Spider.danger = 3;
+
+class Snake extends Autonomous {
+	constructor() {
+		super({ch:"s", fg:"#6c6", name:"poisonous snake"});
+		this.hp = this.maxhp = 10;
+		this.mana = this.maxmana = 0;
+		this.attack = 15;
+	}
+}
+Snake.danger = 4;
+
+class Minotaur extends Autonomous {
+	constructor() {
+		super({ch:"M", fg:"#ca7", name:"minotaur warrior"});
+		this.hp = this.maxhp = 30;
+		this.mana = this.maxmana = 30;
+		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new Mace()); }
+		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new Shield()); }
+		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new Armor()); }
+	}
+}
+Minotaur.danger = 8;
 
 class Hero extends Autonomous {
 	constructor() {
@@ -855,6 +950,16 @@ class Hero extends Autonomous {
 
 var beings = Object.freeze({
 	Rat: Rat,
+	Bat: Bat,
+	Goblin: Goblin,
+	Orc: Orc,
+	OrcWitch: OrcWitch,
+	Skeleton: Skeleton,
+	Ogre: Ogre,
+	Zombie: Zombie,
+	Spider: Spider,
+	Snake: Snake,
+	Minotaur: Minotaur,
 	Hero: Hero
 });
 
@@ -1099,7 +1204,7 @@ class PC extends Being {
 	_chat(being) {
 		let text = being.getChat();
 		if (text) {
-			add$1(`%The says, \"${text}\".`, being);
+			add$1(`%The says, \"${text}\"`, being);
 		} else {
 			add$1("%The does not say anything.", being);
 		}
@@ -1632,19 +1737,16 @@ function doDamage(attacker, defender, options = {}) {
 	let defense = defender.getDefense();
 	let damage = attack + options.power - defense;
 	console.log("attack %s, defense %s, damage %s", attack, defense, damage);
+	damage = Math.max(1, damage);
 
-	if (damage <= 0) {
-		add$1("%The %{verb,fail} to damage %the.", attacker, attacker, defender);
-		return;
-	}
-
+	let verb = (options.isMagic ? "%{verb,cast} a spell on %the" : "%{verb,hit} %the").format(attacker, defender);
 	let newHP = Math.max(0, defender.hp-damage);
 	if (newHP > 0) {
 		let frac = newHP/defender.maxhp; // >0, < maxhp
 		let amount = AMOUNTS[Math.floor(frac * AMOUNTS.length)];
-		add$1(`%The %{verb,hit} %the and ${amount} %{verb,damage} %it.`, attacker, attacker, defender, attacker, defender);
+		add$1(`%The ${verb} and ${amount} %{verb,damage} %it.`, attacker, attacker, defender);
 	} else {
-		add$1(`%The %{verb,hit} %the and %{verb,kill} %it!`, attacker, attacker, defender, attacker, defender);
+		add$1(`%The ${verb} and %{verb,kill} %it!`, attacker, attacker, defender);
 	}
 
 	defender.adjustStat("hp", -damage);
@@ -2421,10 +2523,10 @@ function decorateFirst(level) {
 
 function decorateFull(level) {
 	let features = {
-		item: 3,
-		potion: 2,
-		gold: 1,
-		enemy: 3,
+		item: 4,
+		potion: 3,
+		gold: 2,
+		enemy: 4,
 		hero: 1,
 		empty: 2
 	};

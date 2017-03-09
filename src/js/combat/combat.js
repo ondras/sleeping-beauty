@@ -40,19 +40,16 @@ function doDamage(attacker, defender, options = {}) {
 	let defense = defender.getDefense();
 	let damage = attack + options.power - defense;
 	console.log("attack %s, defense %s, damage %s", attack, defense, damage);
+	damage = Math.max(1, damage);
 
-	if (damage <= 0) {
-		log.add("%The %{verb,fail} to damage %the.", attacker, attacker, defender);
-		return;
-	}
-
+	let verb = (options.isMagic ? "%{verb,cast} a spell on %the" : "%{verb,hit} %the").format(attacker, defender);
 	let newHP = Math.max(0, defender.hp-damage);
 	if (newHP > 0) {
 		let frac = newHP/defender.maxhp; // >0, < maxhp
 		let amount = AMOUNTS[Math.floor(frac * AMOUNTS.length)];
-		log.add(`%The %{verb,hit} %the and ${amount} %{verb,damage} %it.`, attacker, attacker, defender, attacker, defender);
+		log.add(`%The ${verb} and ${amount} %{verb,damage} %it.`, attacker, attacker, defender);
 	} else {
-		log.add(`%The %{verb,hit} %the and %{verb,kill} %it!`, attacker, attacker, defender, attacker, defender);
+		log.add(`%The ${verb} and %{verb,kill} %it!`, attacker, attacker, defender);
 	}
 
 	defender.adjustStat("hp", -damage);
