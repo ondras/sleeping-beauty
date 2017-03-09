@@ -1,16 +1,18 @@
 import * as combat from "combat/combat.js";
-
 import * as map from "ui/map/map.js";
-import * as intro from "ui/intro/intro.js";
 import * as log from "ui/log.js";
 import * as status from "ui/status.js";
 
+import * as intro from "ui/intro/intro.js";
 import * as actors from "util/actors.js";
 
 import pc from "being/pc.js";
 import { generate } from "level/generator.js";
 
+import { draw } from "ui/map/debug.js"
+
 let seed = Date.now();
+seed = 3;
 console.log("seed", seed);
 ROT.RNG.setSeed(seed);
 
@@ -31,6 +33,8 @@ function init() {
 
 	let level = generate(1);
 	level.activate(level.start, pc);
+	let canvas = draw(level);
+	canvas.style.left = canvas.style.top = 0;
 
 	actors.loop();
 }

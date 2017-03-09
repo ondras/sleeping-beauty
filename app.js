@@ -2863,6 +2863,76 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		return promise;
 	}
 
+	var node$1 = void 0;
+
+	function init$5(n) {
+		node$1 = n;
+		node$1.classList.remove("hidden");
+		subscribe("status-change", update$1);
+	}
+
+	function update$1() {
+		var str = "";
+		var level = pc.getLevel();
+		if (level) {
+			str = "Tower floor " + level.danger + ". ";
+		}
+		str = str + "You have:";
+		node$1.innerHTML = str;
+
+		var ul = document.createElement("ul");
+		node$1.appendChild(ul);
+
+		ul.appendChild(buildStatus());
+		ul.appendChild(buildItems());
+	}
+
+	function buildStatus() {
+		var node = document.createElement("li");
+
+		var hp = buildPercentage(pc.hp, pc.maxhp);
+		var mana = buildPercentage(pc.mana, pc.maxmana);
+		var str = hp + " health, " + mana + " mana";
+
+		var gold = pc.inventory.getItemByType("gold");
+		var coins = gold ? gold.amount : 0;
+		if (coins > 0) {
+			var color = gold.getVisual().fg;
+			var suffix = coins > 1 ? "s" : "";
+			str = str + ", <span style=\"color:" + color + "\">" + coins + "</span> " + gold.toString() + suffix;
+		}
+
+		node.innerHTML = str;
+		return node;
+	}
+
+	function buildPercentage(value, limit) {
+		var frac = value / limit;
+		var color = ROT.Color.interpolateHSL([255, 0, 0], [0, 255, 0], frac);
+		color = ROT.Color.toRGB(color);
+		return "<span style=\"color:" + color + "\">" + value + "</span>/" + limit;
+	}
+
+	function buildItems() {
+		var frag = document.createDocumentFragment();
+		var items = pc.inventory.getItems().filter(function (i) {
+			return i.getType() != "gold";
+		});
+		items.forEach(function (item) {
+			var node = document.createElement("li");
+			var str = item.toString();
+			if (item.modifier) {
+				str = str + " (" + (item.modifier > 0 ? "+" : "") + item.modifier + ")";
+			}
+			if (item.combat) {
+				str = str + " (+<strong style=\"color:" + COLORS[item.combat] + "\">#</strong>)";
+			}
+			node.innerHTML = str;
+			frag.appendChild(node);
+		});
+		return frag;
+	}
+
 	var START = [" _     _     _     _ ", "[_]___[_]___[_]___[_]", "[__#__][__#I_]__I__#]", "[_I_#_I__*[__]__#_*_]", "   [_]_#_]__I_#__]   ", "   [I_|/     \\|*_]   ", '   [#_||  ?  ||_#]   ', "   [_I||     ||_#]   ", "   [__]|     ||#_]   "];
 
 	var END = [" \\\\[__]#_I__][__#]// "];
@@ -2871,8 +2941,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 	var TEST = new Array(11).join("\n");
 
-	var node$2 = document.createElement("div");
-	node$2.classList.add("tower");
+	var node$3 = document.createElement("div");
+	node$3.classList.add("tower");
 
 	function mid() {
 		var content = "";
@@ -2936,9 +3006,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 	}
 
 	function fit$1() {
-		var avail = node$2.parentNode.offsetHeight;
-		node$2.innerHTML = TEST;
-		var rows = Math.floor(TEST.length * avail / node$2.offsetHeight) - 4;
+		var avail = node$3.parentNode.offsetHeight;
+		node$3.innerHTML = TEST;
+		var rows = Math.floor(TEST.length * avail / node$3.offsetHeight) - 4;
 
 		rows -= START.length;
 		rows -= END.length;
@@ -2949,24 +3019,24 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		}
 		all = all.concat(END);
 
-		node$2.innerHTML = all.join("\n").replace(/\S/g, colorize);
+		node$3.innerHTML = all.join("\n").replace(/\S/g, colorize);
 	}
 
 	function getNode() {
-		return node$2;
-	}
-
-	var node$3 = document.createElement("div");
-	node$3.classList.add("title");
-	node$3.innerHTML = ".oPYo. 8                       o             \n" + "8      8                                     \n" + "`Yooo. 8 .oPYo. .oPYo. .oPYo. o8 odYo. .oPYo.\n" + "    `8 8 8oooo8 8oooo8 8    8  8 8' `8 8    8\n" + "     8 8 8.     8.     8    8  8 8   8 8    8\n" + "`YooP' 8 `Yooo' `Yooo' 8YooP'  8 8   8 `YooP8\n" + "                       8                    8\n" + "                       8                 ooP'\n" + " .oPYo.                        o             \n" + " 8   `8                        8             \n" + "o8YooP' .oPYo. .oPYo. o    o  o8P o    o     \n" + " 8   `b 8oooo8 .oooo8 8    8   8  8    8     \n" + " 8    8 8.     8    8 8    8   8  8    8     \n" + " 8oooP' `Yooo' `YooP8 `YooP'   8  `YooP8     \n" + "                                       8     \n" + "                                    ooP'     ";
-
-	function getNode$1() {
 		return node$3;
 	}
 
 	var node$4 = document.createElement("div");
-	node$4.classList.add("bottom");
-	node$4.innerHTML = "BOTTOM";
+	node$4.classList.add("title");
+	node$4.innerHTML = ".oPYo. 8                       o             \n" + "8      8                                     \n" + "`Yooo. 8 .oPYo. .oPYo. .oPYo. o8 odYo. .oPYo.\n" + "    `8 8 8oooo8 8oooo8 8    8  8 8' `8 8    8\n" + "     8 8 8.     8.     8    8  8 8   8 8    8\n" + "`YooP' 8 `Yooo' `Yooo' 8YooP'  8 8   8 `YooP8\n" + "                       8                    8\n" + "                       8                 ooP'\n" + " .oPYo.                        o             \n" + " 8   `8                        8             \n" + "o8YooP' .oPYo. .oPYo. o    o  o8P o    o     \n" + " 8   `b 8oooo8 .oooo8 8    8   8  8    8     \n" + " 8    8 8.     8    8 8    8   8  8    8     \n" + " 8oooP' `Yooo' `YooP8 `YooP'   8  `YooP8     \n" + "                                       8     \n" + "                                    ooP'     ";
+
+	function getNode$1() {
+		return node$4;
+	}
+
+	var node$5 = document.createElement("div");
+	node$5.classList.add("bottom");
+	node$5.innerHTML = "BOTTOM";
 
 	var TEST$1 = "xxxxxxxxxx";
 	var PAD = "  ";
@@ -2993,9 +3063,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 	}
 
 	function fit$2() {
-		var avail = node$4.parentNode.offsetWidth;
-		node$4.innerHTML = TEST$1;
-		var columns = Math.floor(TEST$1.length * avail / node$4.offsetWidth) - 2;
+		var avail = node$5.parentNode.offsetWidth;
+		node$5.innerHTML = TEST$1;
+		var columns = Math.floor(TEST$1.length * avail / node$5.offsetWidth) - 2;
 
 		var knight = KNIGHT.join("\n").replace(/\S/g, colorizeKnight).split("\n");
 		var flower = FLOWER.join("\n").replace(/\S/g, colorizeFlower).split("\n");
@@ -3014,33 +3084,33 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		var final = "<span class='grass'>" + new Array(columns + 1).join("^") + "</span>";
 		result.push(final);
 
-		node$4.innerHTML = result.join("\n");
+		node$5.innerHTML = result.join("\n");
 	}
 
 	function getNode$2() {
-		return node$4;
+		return node$5;
 	}
 
-	var node$5 = document.createElement("div");
-	node$5.classList.add("text");
-	node$5.innerHTML = "Into a profound slumber she sank, surrounded only by dense brambles, thorns and roses.\nMany advanturers tried to find and rescue her, but none came back...\n<br/><br/><span>Hit [Enter] to start the game</span>";
+	var node$6 = document.createElement("div");
+	node$6.classList.add("text");
+	node$6.innerHTML = "Into a profound slumber she sank, surrounded only by dense brambles, thorns and roses.\nMany advanturers tried to find and rescue her, but none came back...\n<br/><br/><span>Hit [Enter] to start the game</span>";
 
 	function getNode$3() {
-		return node$5;
+		return node$6;
 	}
 
 	var FACTS = ["This game was created in one week", "This game was written using rot.js, the JavaScript Roguelike Toolkit", "The tower is procedurally generated. Try resizing this page!", "You can reload this page to get another Fun Fact", "The original Sleeping Beauty fairy tale was written by Charles Perrault", "This game is best played with a maximized browser window", "This game can be won!", "This game can be lost!", "This game features permadeath and procedural generation", "This game uses the awesome 'Metrickal' font face", "This game runs even in Microsoft Internet Explorer 11", "Eating a lutefisk might be dangerous"];
 
-	var node$6 = document.createElement("div");
-	node$6.classList.add("funfact");
-	node$6.innerHTML = "Fun Fact: " + FACTS.random();
+	var node$7 = document.createElement("div");
+	node$7.classList.add("funfact");
+	node$7.innerHTML = "Fun Fact: " + FACTS.random();
 
 	function getNode$4() {
-		return node$6;
+		return node$7;
 	}
 
 	var resolve$2 = null;
-	var node$1 = null;
+	var node$2 = null;
 
 	function handleKeyEvent$2(e) {
 		if (!isEnter(e)) {
@@ -3049,7 +3119,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 		pop();
 		window.removeEventListener("resize", onResize);
-		node$1.parentNode.removeChild(node$1);
+		node$2.parentNode.removeChild(node$2);
 
 		resolve$2();
 	}
@@ -3060,12 +3130,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 	}
 
 	function start$1(n) {
-		node$1 = n;
-		node$1.appendChild(getNode$1());
-		node$1.appendChild(getNode$2());
-		node$1.appendChild(getNode$3());
-		node$1.appendChild(getNode());
-		node$1.appendChild(getNode$4());
+		node$2 = n;
+		node$2.appendChild(getNode$1());
+		node$2.appendChild(getNode$2());
+		node$2.appendChild(getNode$3());
+		node$2.appendChild(getNode());
+		node$2.appendChild(getNode$4());
 
 		fit$1();
 		fit$2();
@@ -3078,76 +3148,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		return new Promise(function (r) {
 			return resolve$2 = r;
 		});
-	}
-
-	var node$7 = void 0;
-
-	function init$5(n) {
-		node$7 = n;
-		node$7.classList.remove("hidden");
-		subscribe("status-change", update$1);
-	}
-
-	function update$1() {
-		var str = "";
-		var level = pc.getLevel();
-		if (level) {
-			str = "Tower floor " + level.danger + ". ";
-		}
-		str = str + "You have:";
-		node$7.innerHTML = str;
-
-		var ul = document.createElement("ul");
-		node$7.appendChild(ul);
-
-		ul.appendChild(buildStatus());
-		ul.appendChild(buildItems());
-	}
-
-	function buildStatus() {
-		var node = document.createElement("li");
-
-		var hp = buildPercentage(pc.hp, pc.maxhp);
-		var mana = buildPercentage(pc.mana, pc.maxmana);
-		var str = hp + " health, " + mana + " mana";
-
-		var gold = pc.inventory.getItemByType("gold");
-		var coins = gold ? gold.amount : 0;
-		if (coins > 0) {
-			var color = gold.getVisual().fg;
-			var suffix = coins > 1 ? "s" : "";
-			str = str + ", <span style=\"color:" + color + "\">" + coins + "</span> " + gold.toString() + suffix;
-		}
-
-		node.innerHTML = str;
-		return node;
-	}
-
-	function buildPercentage(value, limit) {
-		var frac = value / limit;
-		var color = ROT.Color.interpolateHSL([255, 0, 0], [0, 255, 0], frac);
-		color = ROT.Color.toRGB(color);
-		return "<span style=\"color:" + color + "\">" + value + "</span>/" + limit;
-	}
-
-	function buildItems() {
-		var frag = document.createDocumentFragment();
-		var items = pc.inventory.getItems().filter(function (i) {
-			return i.getType() != "gold";
-		});
-		items.forEach(function (item) {
-			var node = document.createElement("li");
-			var str = item.toString();
-			if (item.modifier) {
-				str = str + " (" + (item.modifier > 0 ? "+" : "") + item.modifier + ")";
-			}
-			if (item.combat) {
-				str = str + " (+<strong style=\"color:" + COLORS[item.combat] + "\">#</strong>)";
-			}
-			node.innerHTML = str;
-			frag.appendChild(node);
-		});
-		return frag;
 	}
 
 	var D1_RADIUS = 15;
@@ -3469,6 +3469,29 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 	var levels = {};
 
+	function decorateDebris(level) {
+		var radius = dangerToRadius(level.danger);
+		var dist = ROT.RNG.getUniformInt(2 * radius, 5 * radius);
+		var angle = ROT.RNG.getUniform() * 2 * Math.PI;
+
+		var center = new XY(Math.cos(angle), Math.sin(angle)).scale(dist);
+		var da = radius / dist;
+
+		angle += Math.PI;
+		dist += (ROT.RNG.getUniform() - 0.5) * radius;
+
+		for (var a = angle - da; a < angle + da; a += .01) {
+			var xy = center.plus(new XY(Math.cos(a), Math.sin(a)).scale(dist)).round();
+			if (!level.isInside(xy)) {
+				continue;
+			}
+			if (level.getEntity(xy) != WALL) {
+				continue;
+			}
+			level.setCell(xy, ROOM);
+		}
+	}
+
 	function staircaseCallback(danger, start) {
 		return function (who) {
 			if (!(danger in levels)) {
@@ -3615,6 +3638,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			level.setCell(level.start, down);
 		}
 
+		decorateDebris(level);
+
 		if (level.danger == 1) {
 			decorateFirst(level);
 		} else {
@@ -3758,7 +3783,42 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		return level;
 	}
 
+	var CELL$1 = new XY(8, 12);
+
+	function drawCell$1(ctx, xy) {
+		var color = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "#000";
+
+		ctx.fillStyle = color;
+		ctx.fillRect(xy.x, xy.y, CELL$1.x - 1, CELL$1.y - 1);
+	}
+
+	function draw$1(level) {
+		var canvas = document.createElement("canvas");
+		canvas.style.backgroundColor = "#000";
+		document.body.appendChild(canvas);
+
+		var ctx = canvas.getContext("2d");
+		var radius = dangerToRadius(level.danger);
+
+		var offset = new XY(1.5 * radius, 1 * radius).round(); // level center from canvas left-top
+		ctx.canvas.width = CELL$1.x * 2 * offset.x;
+		ctx.canvas.height = CELL$1.y * 2 * offset.y;
+
+		var xy = new XY();
+		for (xy.x = -offset.x; xy.x <= offset.x; xy.x++) {
+			for (xy.y = -offset.y; xy.y <= offset.y; xy.y++) {
+				var visual = level.getEntity(xy).getVisual();
+
+				var pxy = xy.plus(offset).scale(CELL$1.x, CELL$1.y);
+				drawCell$1(ctx, pxy, visual.fg);
+			}
+		}
+
+		return canvas;
+	}
+
 	var seed = Date.now();
+	seed = 3;
 	console.log("seed", seed);
 	ROT.RNG.setSeed(seed);
 
@@ -3779,6 +3839,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 		var level = generate(1);
 		level.activate(level.start, pc);
+		var canvas = draw$1(level);
+		canvas.style.left = canvas.style.top = 0;
 
 		loop();
 	}

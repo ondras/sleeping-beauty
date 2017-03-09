@@ -1864,6 +1864,72 @@ function start(e) {
 	return promise;
 }
 
+let node$1;
+
+function init$5(n) {
+	node$1 = n;
+	node$1.classList.remove("hidden");
+	subscribe("status-change", update$1);
+}
+
+function update$1() {
+	let str = "";
+	let level = pc.getLevel();
+	if (level) {str = `Tower floor ${level.danger}. `; }
+	str = `${str}You have:`;
+	node$1.innerHTML = str;
+
+	let ul = document.createElement("ul");
+	node$1.appendChild(ul);
+
+	ul.appendChild(buildStatus());
+	ul.appendChild(buildItems());
+}
+
+function buildStatus() {
+	let node = document.createElement("li");
+
+	let hp = buildPercentage(pc.hp, pc.maxhp);
+	let mana = buildPercentage(pc.mana, pc.maxmana);
+	let str = `${hp} health, ${mana} mana`;
+
+	let gold = pc.inventory.getItemByType("gold");
+	let coins = (gold ? gold.amount : 0);
+	if (coins > 0) { 
+		let color = gold.getVisual().fg;
+		let suffix = (coins > 1 ? "s" : "");
+		str = `${str}, <span style="color:${color}">${coins}</span> ${gold.toString()}${suffix}`;
+	}
+
+	node.innerHTML = str;
+	return node;
+}
+
+function buildPercentage(value, limit) {
+	let frac = value/limit;
+	let color = ROT.Color.interpolateHSL([255, 0, 0], [0, 255, 0], frac);
+	color = ROT.Color.toRGB(color);
+	return `<span style="color:${color}">${value}</span>/${limit}`;
+}
+
+function buildItems() {
+	let frag = document.createDocumentFragment();
+	let items = pc.inventory.getItems().filter(i => i.getType() != "gold");
+	items.forEach(item => {
+		let node = document.createElement("li");
+		let str = item.toString();
+		if (item.modifier) {
+			str = `${str} (${item.modifier > 0 ? "+" : ""}${item.modifier})`;
+		}
+		if (item.combat) {
+			str = `${str} (+<strong style="color:${COLORS[item.combat]}">#</strong>)`;
+		}
+		node.innerHTML = str;
+		frag.appendChild(node);
+	});
+	return frag;
+}
+
 const START = [
 	" _     _     _     _ ",
 	"[_]___[_]___[_]___[_]",
@@ -1883,8 +1949,8 @@ const WIDTH = 13;
 
 const TEST = new Array(11).join("\n");
 
-let node$2 = document.createElement("div");
-node$2.classList.add("tower");
+let node$3 = document.createElement("div");
+node$3.classList.add("tower");
 
 function mid() {
 	let content = "";
@@ -1946,9 +2012,9 @@ function colorize(ch, index, str) {
 }
 
 function fit$1() {
-	let avail = node$2.parentNode.offsetHeight;
-	node$2.innerHTML = TEST;
-	let rows = Math.floor(TEST.length*avail/node$2.offsetHeight) - 4;
+	let avail = node$3.parentNode.offsetHeight;
+	node$3.innerHTML = TEST;
+	let rows = Math.floor(TEST.length*avail/node$3.offsetHeight) - 4;
 
 	rows -= START.length;
 	rows -= END.length;
@@ -1959,16 +2025,16 @@ function fit$1() {
 	}
 	all = all.concat(END);
 
-	node$2.innerHTML = all.join("\n").replace(/\S/g, colorize);
+	node$3.innerHTML = all.join("\n").replace(/\S/g, colorize);
 }
 
 function getNode() {
-	return node$2;
+	return node$3;
 }
 
-let node$3 = document.createElement("div");
-node$3.classList.add("title");
-node$3.innerHTML =                                               
+let node$4 = document.createElement("div");
+node$4.classList.add("title");
+node$4.innerHTML =                                               
 ".oPYo. 8                       o             \n" +
 "8      8                                     \n" +
 "`Yooo. 8 .oPYo. .oPYo. .oPYo. o8 odYo. .oPYo.\n" +
@@ -1987,12 +2053,12 @@ node$3.innerHTML =
 "                                    ooP'     ";
 
 function getNode$1() {
-	return node$3;
+	return node$4;
 }
 
-let node$4 = document.createElement("div");
-node$4.classList.add("bottom");
-node$4.innerHTML = "BOTTOM";
+let node$5 = document.createElement("div");
+node$5.classList.add("bottom");
+node$5.innerHTML = "BOTTOM";
 
 const TEST$1 = "xxxxxxxxxx";
 const PAD = "  ";
@@ -2035,9 +2101,9 @@ function colorizeFlower(ch) {
 }
 
 function fit$2() {
-	let avail = node$4.parentNode.offsetWidth;
-	node$4.innerHTML = TEST$1;
-	let columns = Math.floor(TEST$1.length*avail/node$4.offsetWidth) - 2;
+	let avail = node$5.parentNode.offsetWidth;
+	node$5.innerHTML = TEST$1;
+	let columns = Math.floor(TEST$1.length*avail/node$5.offsetWidth) - 2;
 
 	let knight = KNIGHT.join("\n").replace(/\S/g, colorizeKnight).split("\n");
 	let flower = FLOWER.join("\n").replace(/\S/g, colorizeFlower).split("\n");
@@ -2056,22 +2122,22 @@ function fit$2() {
 	let final = `<span class='grass'>${new Array(columns+1).join("^")}</span>`;
 	result.push(final);
 
-	node$4.innerHTML = result.join("\n");
+	node$5.innerHTML = result.join("\n");
 }
 
 function getNode$2() {
-	return node$4;
+	return node$5;
 }
 
-let node$5 = document.createElement("div");
-node$5.classList.add("text");
-node$5.innerHTML = 
+let node$6 = document.createElement("div");
+node$6.classList.add("text");
+node$6.innerHTML = 
 `Into a profound slumber she sank, surrounded only by dense brambles, thorns and roses.
 Many advanturers tried to find and rescue her, but none came back...
 <br/><br/><span>Hit [Enter] to start the game</span>`;
 
 function getNode$3() {
-	return node$5;
+	return node$6;
 }
 
 const FACTS = [
@@ -2089,23 +2155,23 @@ const FACTS = [
 	"Eating a lutefisk might be dangerous"
 ];
 
-let node$6 = document.createElement("div");
-node$6.classList.add("funfact");
-node$6.innerHTML = `Fun Fact: ${FACTS.random()}`;
+let node$7 = document.createElement("div");
+node$7.classList.add("funfact");
+node$7.innerHTML = `Fun Fact: ${FACTS.random()}`;
 
 function getNode$4() {
-	return node$6;
+	return node$7;
 }
 
 let resolve$2 = null;
-let node$1 = null;
+let node$2 = null;
 
 function handleKeyEvent$2(e) {
 	if (!isEnter(e)) { return; }
 
 	pop();
 	window.removeEventListener("resize", onResize);
-	node$1.parentNode.removeChild(node$1);
+	node$2.parentNode.removeChild(node$2);
 
 	resolve$2();
 }
@@ -2116,12 +2182,12 @@ function onResize(e) {
 }
 
 function start$1(n) {
-	node$1 = n;
-	node$1.appendChild(getNode$1());
-	node$1.appendChild(getNode$2());
-	node$1.appendChild(getNode$3());
-	node$1.appendChild(getNode());
-	node$1.appendChild(getNode$4());
+	node$2 = n;
+	node$2.appendChild(getNode$1());
+	node$2.appendChild(getNode$2());
+	node$2.appendChild(getNode$3());
+	node$2.appendChild(getNode());
+	node$2.appendChild(getNode$4());
 
 	fit$1();
 	fit$2();
@@ -2132,72 +2198,6 @@ function start$1(n) {
 	window.addEventListener("load", onResize);
 
 	return new Promise(r => resolve$2 = r);
-}
-
-let node$7;
-
-function init$5(n) {
-	node$7 = n;
-	node$7.classList.remove("hidden");
-	subscribe("status-change", update$1);
-}
-
-function update$1() {
-	let str = "";
-	let level = pc.getLevel();
-	if (level) {str = `Tower floor ${level.danger}. `; }
-	str = `${str}You have:`;
-	node$7.innerHTML = str;
-
-	let ul = document.createElement("ul");
-	node$7.appendChild(ul);
-
-	ul.appendChild(buildStatus());
-	ul.appendChild(buildItems());
-}
-
-function buildStatus() {
-	let node = document.createElement("li");
-
-	let hp = buildPercentage(pc.hp, pc.maxhp);
-	let mana = buildPercentage(pc.mana, pc.maxmana);
-	let str = `${hp} health, ${mana} mana`;
-
-	let gold = pc.inventory.getItemByType("gold");
-	let coins = (gold ? gold.amount : 0);
-	if (coins > 0) { 
-		let color = gold.getVisual().fg;
-		let suffix = (coins > 1 ? "s" : "");
-		str = `${str}, <span style="color:${color}">${coins}</span> ${gold.toString()}${suffix}`;
-	}
-
-	node.innerHTML = str;
-	return node;
-}
-
-function buildPercentage(value, limit) {
-	let frac = value/limit;
-	let color = ROT.Color.interpolateHSL([255, 0, 0], [0, 255, 0], frac);
-	color = ROT.Color.toRGB(color);
-	return `<span style="color:${color}">${value}</span>/${limit}`;
-}
-
-function buildItems() {
-	let frag = document.createDocumentFragment();
-	let items = pc.inventory.getItems().filter(i => i.getType() != "gold");
-	items.forEach(item => {
-		let node = document.createElement("li");
-		let str = item.toString();
-		if (item.modifier) {
-			str = `${str} (${item.modifier > 0 ? "+" : ""}${item.modifier})`;
-		}
-		if (item.combat) {
-			str = `${str} (+<strong style="color:${COLORS[item.combat]}">#</strong>)`;
-		}
-		node.innerHTML = str;
-		frag.appendChild(node);
-	});
-	return frag;
 }
 
 const D1_RADIUS = 15;
@@ -2477,6 +2477,25 @@ function furthestRoom(rooms, start) {
 
 const levels = {};
 
+function decorateDebris(level) {
+	let radius = dangerToRadius(level.danger);
+	let dist = ROT.RNG.getUniformInt(2*radius, 5*radius);
+	let angle = ROT.RNG.getUniform()*2*Math.PI;
+
+	let center = new XY(Math.cos(angle), Math.sin(angle)).scale(dist);
+	let da = radius/dist;
+
+	angle += Math.PI;
+	dist += (ROT.RNG.getUniform()-0.5)*radius;
+
+	for (let a=angle-da; a<angle+da; a+=.01) {
+		let xy = center.plus(new XY(Math.cos(a), Math.sin(a)).scale(dist)).round();
+		if (!level.isInside(xy)) { continue; }
+		if (level.getEntity(xy) != WALL) { continue; }
+		level.setCell(xy, ROOM);
+	}
+}
+
 function staircaseCallback(danger, start) {
 	return function(who) {
 		if (!(danger in levels)) { generate(danger); } /* create another level */
@@ -2603,6 +2622,8 @@ function decorateRegular(level) {
 		let down = new Staircase(false, staircaseCallback(level.danger-1, false));
 		level.setCell(level.start, down);
 	}
+
+	decorateDebris(level);
 
 	if (level.danger == 1) {
 		decorateFirst(level);
@@ -2734,7 +2755,40 @@ function generate(danger) {
 	return level;
 }
 
+const CELL$1 = new XY(8, 12);
+
+function drawCell$1(ctx, xy, color="#000") {
+	ctx.fillStyle = color;
+	ctx.fillRect(xy.x, xy.y, CELL$1.x-1, CELL$1.y-1);
+}
+
+function draw$1(level) {
+	let canvas = document.createElement("canvas");
+	canvas.style.backgroundColor = "#000";
+	document.body.appendChild(canvas);
+
+	let ctx = canvas.getContext("2d");
+	let radius = dangerToRadius(level.danger);
+
+	let offset = new XY(1.5*radius, 1*radius).round(); // level center from canvas left-top
+	ctx.canvas.width = CELL$1.x * 2 * offset.x;
+	ctx.canvas.height = CELL$1.y * 2 * offset.y;
+
+	let xy = new XY();
+	for (xy.x=-offset.x; xy.x<=offset.x; xy.x++) {
+		for (xy.y=-offset.y; xy.y<=offset.y; xy.y++) {
+			let visual = level.getEntity(xy).getVisual();
+
+			let pxy = xy.plus(offset).scale(CELL$1.x, CELL$1.y);
+			drawCell$1(ctx, pxy, visual.fg);
+		}
+	}
+
+	return canvas;
+}
+
 let seed = Date.now();
+seed = 3;
 console.log("seed", seed);
 ROT.RNG.setSeed(seed);
 
@@ -2755,6 +2809,8 @@ function init$$1() {
 
 	let level = generate(1);
 	level.activate(level.start, pc);
+	let canvas = draw$1(level);
+	canvas.style.left = canvas.style.top = 0;
 
 	loop();
 }

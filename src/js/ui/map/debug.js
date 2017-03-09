@@ -1,4 +1,5 @@
 import XY from "util/xy.js";
+import {dangerToRadius} from "level/level.js";
 
 const CELL = new XY(8, 12);
 
@@ -15,19 +16,19 @@ export function draw(level) {
 	let ctx = canvas.getContext("2d");
 	let radius = dangerToRadius(level.danger);
 
-	let offset = new XY(1.5*radius, 1*radius); // level center from canvas left-top
+	let offset = new XY(1.5*radius, 1*radius).round(); // level center from canvas left-top
 	ctx.canvas.width = CELL.x * 2 * offset.x;
 	ctx.canvas.height = CELL.y * 2 * offset.y;
 
 	let xy = new XY();
 	for (xy.x=-offset.x; xy.x<=offset.x; xy.x++) {
 		for (xy.y=-offset.y; xy.y<=offset.y; xy.y++) {
-			let visual = level.visualAt(xy);
-
-			if (!visual) continue;
+			let visual = level.getEntity(xy).getVisual();
 
 			let pxy = xy.plus(offset).scale(CELL.x, CELL.y);
 			drawCell(ctx, pxy, visual.fg);
 		}
 	}
+
+	return canvas;
 }

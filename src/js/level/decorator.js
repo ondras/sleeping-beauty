@@ -1,8 +1,8 @@
 import XY from "util/xy.js";
 import { generate } from "./generator.js";
 import { dangerToRadius } from "./level.js";
-import * as factory from "util/factory.js";
 
+import * as factory from "util/factory.js";
 import * as beings from "being/beings.js";
 import * as items from "item/items.js";
 import * as cells from "./cells.js";
@@ -10,6 +10,25 @@ import * as room from "./room.js";
 import * as rules from "rules.js";
 
 const levels = {};
+
+function decorateDebris(level) {
+	let radius = dangerToRadius(level.danger);
+	let dist = ROT.RNG.getUniformInt(2*radius, 5*radius);
+	let angle = ROT.RNG.getUniform()*2*Math.PI;
+
+	let center = new XY(Math.cos(angle), Math.sin(angle)).scale(dist);
+	let da = radius/dist;
+
+	angle += Math.PI;
+	dist += (ROT.RNG.getUniform()-0.5)*radius;
+
+	for (let a=angle-da; a<angle+da; a+=.01) {
+		let xy = center.plus(new XY(Math.cos(a), Math.sin(a)).scale(dist)).round();
+		if (!level.isInside(xy)) { continue; }
+		if (level.getEntity(xy) != cells.WALL) { continue; }
+		level.setCell(xy, cells.ROOM);
+	}
+}
 
 function staircaseCallback(danger, start) {
 	return function(who) {
@@ -137,6 +156,8 @@ function decorateRegular(level) {
 		let down = new cells.Staircase(false, staircaseCallback(level.danger-1, false));
 		level.setCell(level.start, down);
 	}
+
+	decorateDebris(level);
 
 	if (level.danger == 1) {
 		decorateFirst(level);
