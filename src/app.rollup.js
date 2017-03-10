@@ -480,10 +480,10 @@ const MAGIC_1 = "m1";
 const MAGIC_2 = "m2";
 
 const COLORS = {
-	[ATTACK_1]: "lime",
-	[ATTACK_2]: "red",
-	[MAGIC_1]: "blue",
-	[MAGIC_2]: "yellow"
+	[ATTACK_1]: "#0f0",
+	[ATTACK_2]: "#f00",
+	[MAGIC_1]: "#00f",
+	[MAGIC_2]: "#ff3"
 };
 
 const SUFFIXES = {
@@ -1517,7 +1517,7 @@ function drawCell(xy, color, highlight) {
 	let x = (xy.x+0.5)*CELL;
 	let y = CTX.canvas.height-(xy.y+0.5)*CELL;
 
-	let alpha = 0.75;
+	let alpha = 0.8;
 	let bold = false;
 	if (highlight.some(hxy => hxy.is(xy))) { 
 		alpha = 1; 

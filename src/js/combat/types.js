@@ -4,8 +4,8 @@ export const MAGIC_1 = "m1";
 export const MAGIC_2 = "m2";
 
 export const COLORS = {
-	[ATTACK_1]: "lime",
-	[ATTACK_2]: "red",
-	[MAGIC_1]: "blue",
-	[MAGIC_2]: "yellow"
+	[ATTACK_1]: "#0f0",
+	[ATTACK_2]: "#f00",
+	[MAGIC_1]: "#00f",
+	[MAGIC_2]: "#ff3"
 }

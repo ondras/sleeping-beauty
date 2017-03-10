@@ -35,7 +35,7 @@ function drawCell(xy, color, highlight) {
 	let x = (xy.x+0.5)*CELL;
 	let y = CTX.canvas.height-(xy.y+0.5)*CELL;
 
-	let alpha = 0.75;
+	let alpha = 0.8;
 	let bold = false;
 	if (highlight.some(hxy => hxy.is(xy))) { 
 		alpha = 1; 

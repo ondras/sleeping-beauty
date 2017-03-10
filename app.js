@@ -1134,7 +1134,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 	var MAGIC_1 = "m1";
 	var MAGIC_2 = "m2";
 
-	var COLORS = (_COLORS = {}, _COLORS[ATTACK_1] = "lime", _COLORS[ATTACK_2] = "red", _COLORS[MAGIC_1] = "blue", _COLORS[MAGIC_2] = "yellow", _COLORS);
+	var COLORS = (_COLORS = {}, _COLORS[ATTACK_1] = "#0f0", _COLORS[ATTACK_2] = "#f00", _COLORS[MAGIC_1] = "#00f", _COLORS[MAGIC_2] = "#ff3", _COLORS);
 
 	var SUFFIXES = (_SUFFIXES = {}, _SUFFIXES[ATTACK_1] = "power", _SUFFIXES[ATTACK_2] = "treachery", _SUFFIXES[MAGIC_1] = "magical domination", _SUFFIXES[MAGIC_2] = "magical weakness", _SUFFIXES);
 
@@ -2488,7 +2488,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		var x = (xy.x + 0.5) * CELL;
 		var y = CTX.canvas.height - (xy.y + 0.5) * CELL;
 
-		var alpha = 0.75;
+		var alpha = 0.8;
 		var bold = false;
 		if (highlight.some(function (hxy) {
 			return hxy.is(xy);
