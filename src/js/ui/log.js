@@ -28,6 +28,6 @@ export function init(n) {
 	pause();
 
 	setInterval(() => {
-		node.scrollTop += 2;
+		node.scrollTop += 3;
 	}, 20);
 }

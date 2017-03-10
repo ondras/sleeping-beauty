@@ -837,7 +837,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		pause();
 
 		setInterval(function () {
-			node.scrollTop += 2;
+			node.scrollTop += 3;
 		}, 20);
 	}
 
@@ -2463,7 +2463,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 	var CTX = document.createElement("canvas").getContext("2d");
 	var LEGEND = document.createElement("ul");
 
-	var LABELS = (_LABELS = {}, _LABELS[ATTACK_1] = "Attack (you)", _LABELS[ATTACK_2] = "Attack (enemy)", _LABELS[MAGIC_1] = "Magic attack (you)", _LABELS[MAGIC_2] = "Magic attack (enemy)", _LABELS);
+	var LABELS = (_LABELS = {}, _LABELS[ATTACK_1] = "You attack", _LABELS[ATTACK_2] = "Enemy attacks", _LABELS[MAGIC_1] = "You attack (magic)", _LABELS[MAGIC_2] = "Enemy attacks (magic)", _LABELS);
 
 	function buildLegend() {
 		[ATTACK_1, ATTACK_2, MAGIC_1, MAGIC_2].forEach(function (id) {
@@ -2628,7 +2628,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 	var FONT_BASE = 18;
 	var FONT_ZOOM = 120;
-	var ZOOM_TIME = 1500;
+	var ZOOM_TIME = 1000;
 
 	var level = null;
 	var options = {

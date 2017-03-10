@@ -4,7 +4,7 @@ import Memory from "./memory.js";
 
 const FONT_BASE = 18;
 const FONT_ZOOM = 120;
-const ZOOM_TIME = 1500;
+const ZOOM_TIME = 1000;
 
 let level = null;
 let options = {

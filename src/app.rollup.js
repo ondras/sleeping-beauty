@@ -265,7 +265,7 @@ function init$2(n) {
 	pause();
 
 	setInterval(() => {
-		node.scrollTop += 2;
+		node.scrollTop += 3;
 	}, 20);
 }
 
@@ -1488,10 +1488,10 @@ const CTX = document.createElement("canvas").getContext("2d");
 const LEGEND = document.createElement("ul");
 
 const LABELS = {
-	[ATTACK_1]: "Attack (you)",
-	[ATTACK_2]: "Attack (enemy)",
-	[MAGIC_1]: "Magic attack (you)",
-	[MAGIC_2]: "Magic attack (enemy)"
+	[ATTACK_1]: "You attack",
+	[ATTACK_2]: "Enemy attacks",
+	[MAGIC_1]: "You attack (magic)",
+	[MAGIC_2]: "Enemy attacks (magic)"
 };
 
 function buildLegend() {
@@ -1641,7 +1641,7 @@ class Memory {
 
 const FONT_BASE = 18;
 const FONT_ZOOM = 120;
-const ZOOM_TIME = 1500;
+const ZOOM_TIME = 1000;
 
 let level = null;
 let options = {
