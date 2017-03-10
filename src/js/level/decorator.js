@@ -112,7 +112,7 @@ function decorateFull(level) {
 		potion: 3,
 		lutefisk: 0.1,
 		gold: 2,
-		enemy: 4,
+		enemy: 5,
 		hero: 1,
 		empty: 2
 	}

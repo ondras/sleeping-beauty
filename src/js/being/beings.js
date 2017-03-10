@@ -86,6 +86,7 @@ export class Skeleton extends Autonomous {
 	constructor() {
 		super({ch:"s", fg:"#eee", name:"skeleton"});
 		this.hp = this.maxhp = 25;
+		this.attack = 15;
 		if (ROT.RNG.getUniform() > 0.5) { 
 			this.inventory.addItem(new items.Dagger());
 		} else {
@@ -99,6 +100,7 @@ export class Ogre extends Autonomous {
 	constructor() {
 		super({ch:"O", fg:"#3a3", name:"ogre"});
 		this.hp = this.maxhp = 30;
+		this.attack = 15;
 		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new items.Mace()); }
 		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new items.Shield()); }
 	}
@@ -137,6 +139,7 @@ export class Minotaur extends Autonomous {
 		super({ch:"M", fg:"#ca7", name:"minotaur warrior"});
 		this.hp = this.maxhp = 30;
 		this.mana = this.maxmana = 30;
+		this.attack = 15;
 		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new items.Mace()); }
 		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new items.Shield()); }
 		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new items.Armor()); }
@@ -149,6 +152,7 @@ export class Tree extends Autonomous {
 		super({ch:"T", fg:"#3c3", name:"animated tree"});
 		this.hp = this.maxhp = 30;
 		this.mana = this.maxmana = 30;
+		this.defense = 15;
 		this.ai.mobile = false;
 	}
 }

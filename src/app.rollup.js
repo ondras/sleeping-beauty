@@ -895,6 +895,7 @@ class Skeleton extends Autonomous {
 	constructor() {
 		super({ch:"s", fg:"#eee", name:"skeleton"});
 		this.hp = this.maxhp = 25;
+		this.attack = 15;
 		if (ROT.RNG.getUniform() > 0.5) { 
 			this.inventory.addItem(new Dagger());
 		} else {
@@ -908,6 +909,7 @@ class Ogre extends Autonomous {
 	constructor() {
 		super({ch:"O", fg:"#3a3", name:"ogre"});
 		this.hp = this.maxhp = 30;
+		this.attack = 15;
 		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new Mace()); }
 		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new Shield()); }
 	}
@@ -946,6 +948,7 @@ class Minotaur extends Autonomous {
 		super({ch:"M", fg:"#ca7", name:"minotaur warrior"});
 		this.hp = this.maxhp = 30;
 		this.mana = this.maxmana = 30;
+		this.attack = 15;
 		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new Mace()); }
 		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new Shield()); }
 		if (ROT.RNG.getUniform() > 0.5) { this.inventory.addItem(new Armor()); }
@@ -958,6 +961,7 @@ class Tree$1 extends Autonomous {
 		super({ch:"T", fg:"#3c3", name:"animated tree"});
 		this.hp = this.maxhp = 30;
 		this.mana = this.maxmana = 30;
+		this.defense = 15;
 		this.ai.mobile = false;
 	}
 }
@@ -2628,7 +2632,7 @@ function decorateFull(level) {
 		potion: 3,
 		lutefisk: 0.1,
 		gold: 2,
-		enemy: 4,
+		enemy: 5,
 		hero: 1,
 		empty: 2
 	};

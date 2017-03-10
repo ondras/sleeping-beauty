@@ -1708,6 +1708,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			var _this34 = _possibleConstructorReturn(this, _Autonomous6.call(this, { ch: "s", fg: "#eee", name: "skeleton" }));
 
 			_this34.hp = _this34.maxhp = 25;
+			_this34.attack = 15;
 			if (ROT.RNG.getUniform() > 0.5) {
 				_this34.inventory.addItem(new Dagger());
 			} else {
@@ -1730,6 +1731,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			var _this35 = _possibleConstructorReturn(this, _Autonomous7.call(this, { ch: "O", fg: "#3a3", name: "ogre" }));
 
 			_this35.hp = _this35.maxhp = 30;
+			_this35.attack = 15;
 			if (ROT.RNG.getUniform() > 0.5) {
 				_this35.inventory.addItem(new Mace());
 			}
@@ -1806,6 +1808,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			_this39.hp = _this39.maxhp = 30;
 			_this39.mana = _this39.maxmana = 30;
+			_this39.attack = 15;
 			if (ROT.RNG.getUniform() > 0.5) {
 				_this39.inventory.addItem(new Mace());
 			}
@@ -1833,6 +1836,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			_this40.hp = _this40.maxhp = 30;
 			_this40.mana = _this40.maxmana = 30;
+			_this40.defense = 15;
 			_this40.ai.mobile = false;
 			return _this40;
 		}
@@ -3652,7 +3656,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			potion: 3,
 			lutefisk: 0.1,
 			gold: 2,
-			enemy: 4,
+			enemy: 5,
 			hero: 1,
 			empty: 2
 		};
