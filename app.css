@@ -103,7 +103,7 @@ ul {
   bottom: 0;
   width: 40vw;
   height: 40vh;
-  border: 4px solid #000;
+  border: 6px solid #000;
 }
 #combat {
   right: 0;
@@ -141,7 +141,7 @@ ul {
   width: 60vw;
   height: 40vh;
   overflow: hidden;
-  border: 4px solid #000;
+  border: 6px solid #000;
 }
 #log p {
   margin-top: 0;
