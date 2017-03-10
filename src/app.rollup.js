@@ -2170,7 +2170,7 @@ let node$6 = document.createElement("div");
 node$6.classList.add("text");
 node$6.innerHTML = 
 `Into a profound slumber she sank, surrounded only by dense brambles, thorns and roses.
-Many advanturers tried to find and rescue her, but none came back...
+Many adventurers tried to find and rescue her, but none came back...
 <br/><br/><span>Hit [Enter] to start the game</span>`;
 
 function getNode$3() {
