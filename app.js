@@ -1933,6 +1933,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		return e.keyCode == 13;
 	}
 
+	function isSpace(e) {
+		if (e.type != "keydown") {
+			return null;
+		}
+		return e.keyCode == 32;
+	}
+
 	function isEscape(e) {
 		if (e.type != "keydown") {
 			return null;
@@ -2085,6 +2092,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		};
 
 		PC.prototype.handleKeyEvent = function handleKeyEvent(e) {
+			if (isSpace(e)) {
+				return this._wait();
+			}
 			if (isEnter(e)) {
 				return this._activate(this._xy);
 			}
@@ -2165,6 +2175,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 					add$1("To use the staircase, press {#fff}Enter{}.");
 				}
 			}
+		};
+
+		PC.prototype._wait = function _wait() {
+			add$1("You wait a bit.");
+			this._resolve();
 		};
 
 		PC.prototype._activate = function _activate(xy) {

@@ -32,6 +32,11 @@ export function isEnter(e) {
 	return (e.keyCode == 13);
 }
 
+export function isSpace(e) {
+	if (e.type != "keydown") { return null; }
+	return (e.keyCode == 32);
+}
+
 export function isEscape(e) {
 	if (e.type != "keydown") { return null; }
 	return (e.keyCode == 27);

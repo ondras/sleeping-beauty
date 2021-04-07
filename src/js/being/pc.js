@@ -65,6 +65,7 @@ class PC extends Being {
 	}
 
 	handleKeyEvent(e) {
+		if (keyboard.isSpace(e)) { return this._wait(); }
 		if (keyboard.isEnter(e)) { return this._activate(this._xy); }
 
 		let dir = keyboard.getDirection(e);
@@ -141,9 +142,14 @@ class PC extends Being {
 		}
 	}
 
+	_wait() {
+		log.add("You wait a bit.");
+		this._resolve();
+	}
+
 	_activate(xy) { // pick or enter
 		let item = this._level.getItem(xy);
-		if (item) { 
+		if (item) {
 			item.pick(this);
 			this._resolve();
 			return;
@@ -211,7 +217,7 @@ class PC extends Being {
 		}
 
 		choice(options).then(index => {
-			if (index == -1) { 
+			if (index == -1) {
 				log.add("You decide to do nothing.");
 				return;
 			}

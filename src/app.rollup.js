@@ -1048,6 +1048,11 @@ function isEnter(e) {
 	return (e.keyCode == 13);
 }
 
+function isSpace(e) {
+	if (e.type != "keydown") { return null; }
+	return (e.keyCode == 32);
+}
+
 function isEscape(e) {
 	if (e.type != "keydown") { return null; }
 	return (e.keyCode == 27);
@@ -1160,6 +1165,7 @@ class PC extends Being {
 	}
 
 	handleKeyEvent(e) {
+		if (isSpace(e)) { return this._wait(); }
 		if (isEnter(e)) { return this._activate(this._xy); }
 
 		let dir = getDirection(e);
@@ -1236,9 +1242,14 @@ class PC extends Being {
 		}
 	}
 
+	_wait() {
+		add$1("You wait a bit.");
+		this._resolve();
+	}
+
 	_activate(xy) { // pick or enter
 		let item = this._level.getItem(xy);
-		if (item) { 
+		if (item) {
 			item.pick(this);
 			this._resolve();
 			return;
@@ -1306,7 +1317,7 @@ class PC extends Being {
 		}
 
 		choice(options).then(index => {
-			if (index == -1) { 
+			if (index == -1) {
 				add$1("You decide to do nothing.");
 				return;
 			}
