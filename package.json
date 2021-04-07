@@ -9,7 +9,15 @@
     "build": "npm run less; npm run rollup; npm run babel"
   },
   "babel": {
-    "presets": [ ["es2015", { "loose": true, "modules": false }] ]
+    "presets": [
+      [
+        "es2015",
+        {
+          "loose": true,
+          "modules": false
+        }
+      ]
+    ]
   },
   "author": "",
   "license": "ISC",

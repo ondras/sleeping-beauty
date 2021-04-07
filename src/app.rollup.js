@@ -2827,7 +2827,7 @@ function init$$1() {
 	add$1("This tower is surrounded by plains and trees and there might be a princess sleeping on the last floor.");
 	pause();
 	add$1("Apparently the only way to get to her is to advance through all tower levels.");
-	add$1("To move around, use {#fff}arrow keys{}, {#fff}numpad{} or {#fff}vim-keys{}.");
+	add$1("To move around, use {#fff}arrow keys{}, {#fff}numpad{} or {#fff}vi-keys{}.");
 	pause();
 
 	let level = generate(1);
